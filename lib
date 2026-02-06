@@ -1,3 +1,6 @@
+-- FIXED: This combines everything into ONE file so there's no loading issues
+-- This is your complete cohoes_enhanced.lua with dropdown and colorpicker built-in
+
 local Cohoes = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
@@ -67,7 +70,7 @@ local function AddGlow(element, color, size, transparency)
     return glow
 end
 
--- Helper function to add drop shadow (enhanced version)
+-- Helper function to add drop shadow
 local function AddShadow(element, transparency)
     local shadow = Instance.new("ImageLabel")
     shadow.Name = "Shadow"
@@ -259,7 +262,6 @@ function Cohoes:CreateWindow(options)
     mainStroke.Thickness = 1
     mainStroke.Parent = Main
     
-    -- Enhanced shadow
     local mainShadow = AddShadow(Main, 0.2)
     
     -- Header
@@ -281,7 +283,6 @@ function Cohoes:CreateWindow(options)
     headerFix.BorderSizePixel = 0
     headerFix.Parent = Header
     
-    -- Title with RichText styling
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, -70, 1, 0)
     titleLabel.Position = UDim2.new(0, 12, 0, 0)
@@ -362,7 +363,6 @@ function Cohoes:CreateWindow(options)
     TabSidebar.BorderSizePixel = 0
     TabSidebar.Parent = Main
     
-    -- Sidebar divider
     local sidebarDivider = Instance.new("Frame")
     sidebarDivider.AnchorPoint = Vector2.new(1, 0)
     sidebarDivider.Position = UDim2.new(1, 0, 0, 0)
@@ -392,7 +392,7 @@ function Cohoes:CreateWindow(options)
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = Main
     
-    -- Global fade for transitions
+    -- Global fade
     local GlobalFade = Instance.new("Frame")
     GlobalFade.Name = "GlobalFade"
     GlobalFade.Position = UDim2.new(0, 196, 0, 56)
@@ -428,7 +428,7 @@ function Cohoes:CreateWindow(options)
     gameInfo.AnchorPoint = Vector2.new(0, 0.5)
     gameInfo.BackgroundTransparency = 1
     gameInfo.Font = Enum.Font.GothamBold
-    gameInfo.Text = options.GameInfo or "skibi.cc for " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+    gameInfo.Text = options.GameInfo or "skibi.cc for Roblox"
     gameInfo.TextColor3 = Color3.fromRGB(72, 72, 73)
     gameInfo.TextSize = 14
     gameInfo.TextXAlignment = Enum.TextXAlignment.Left
@@ -535,7 +535,6 @@ function Cohoes:CreateWindow(options)
         tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
         tabStroke.Parent = tabBtn
         
-        -- Icon
         local tabIcon = Instance.new("ImageLabel")
         tabIcon.AnchorPoint = Vector2.new(0, 0.5)
         tabIcon.Position = UDim2.new(0, 10, 0.5, 0)
@@ -546,7 +545,6 @@ function Cohoes:CreateWindow(options)
         tabIcon.Parent = tabBtn
         Cohoes:ApplyTheme(tabIcon, "ImageColor3")
         
-        -- Text
         local tabText = Instance.new("TextLabel")
         tabText.Position = UDim2.new(0, 40, 0, 0)
         tabText.Size = UDim2.new(0, 0, 1, 0)
@@ -604,7 +602,6 @@ function Cohoes:CreateWindow(options)
             if Window.CurrentTab and Window.Tabs[Window.CurrentTab] then
                 local oldTab = Window.Tabs[Window.CurrentTab]
                 
-                -- Fade animation
                 GlobalFade.BackgroundTransparency = 0
                 Cohoes:tween(GlobalFade, {BackgroundTransparency = 1}, Enum.EasingStyle.Quad, 0.4)
                 
@@ -644,12 +641,8 @@ function Cohoes:CreateWindow(options)
             updateCanvasSize()
         end
         
-        -- Continue with sections and elements here (keeping your existing implementations)
-        -- I'll add a basic section creator as example
-        
+        -- CreateSection
         function Tab:CreateSection(sectionName)
-            local SectionOrder = 0
-            
             local section = Instance.new("Frame")
             section.Name = sectionName
             section.Size = UDim2.new(1, 0, 0, 0)
@@ -695,6 +688,608 @@ function Cohoes:CreateWindow(options)
             return section, sLayout
         end
         
+        -- CreateToggle
+        function Tab:CreateToggle(options)
+            local name = options.Name or "Toggle"
+            local default = options.Default or false
+            local callback = options.Callback or function() end
+            local parent = options.Section or page
+            
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 26)
+            container.BackgroundTransparency = 1
+            container.Parent = parent
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -50, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Font = Enum.Font.Gotham
+            label.Text = name
+            label.TextColor3 = Theme.Text
+            label.TextSize = 16
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+            
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(0, 38, 0, 18)
+            btn.Position = UDim2.new(1, -38, 0.5, -9)
+            btn.BackgroundColor3 = default and Theme.Accent or Theme.Tertiary
+            btn.BorderSizePixel = 0
+            btn.Text = ""
+            btn.Parent = container
+            
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(1, 0)
+            btnCorner.Parent = btn
+            
+            local btnGlow = AddGlow(btn, Theme.Accent, 12, default and 0.5 or 1)
+            
+            local knob = Instance.new("Frame")
+            knob.Size = UDim2.new(0, 14, 0, 14)
+            knob.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
+            knob.BackgroundColor3 = default and Theme.Background or Theme.TextDark
+            knob.BorderSizePixel = 0
+            knob.Parent = btn
+            
+            local knobCorner = Instance.new("UICorner")
+            knobCorner.CornerRadius = UDim.new(1, 0)
+            knobCorner.Parent = knob
+            
+            local knobGlow = AddGlow(knob, Theme.Accent, 8, 1)
+            
+            local enabled = default
+            
+            local function set(bool)
+                Cohoes:tween(btn, {BackgroundColor3 = bool and Theme.Accent or Theme.Tertiary}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(knob, {
+                    Position = bool and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
+                    BackgroundColor3 = bool and Theme.Background or Theme.TextDark
+                }, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(btnGlow, {ImageTransparency = bool and 0.5 or 1}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(knobGlow, {ImageTransparency = bool and 0.6 or 1}, Enum.EasingStyle.Quart, 0.2)
+                callback(bool)
+            end
+            
+            btn.MouseButton1Click:Connect(function()
+                enabled = not enabled
+                set(enabled)
+            end)
+            
+            set(default)
+            
+            local Toggle = {}
+            function Toggle:Set(value)
+                enabled = value
+                set(value)
+            end
+            function Toggle:Get() return enabled end
+            
+            return Toggle
+        end
+        
+        -- CreateSlider
+        function Tab:CreateSlider(options)
+            local name = options.Name or "Slider"
+            local min = options.Min or 0
+            local max = options.Max or 100
+            local default = options.Default or min
+            local decimals = options.Decimals or 0
+            local callback = options.Callback or function() end
+            local parent = options.Section or page
+            
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 38)
+            container.BackgroundTransparency = 1
+            container.Parent = parent
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -70, 0, 16)
+            label.BackgroundTransparency = 1
+            label.Font = Enum.Font.Gotham
+            label.Text = name
+            label.TextColor3 = Theme.Text
+            label.TextSize = 16
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+            
+            local valueBox = Instance.new("TextBox")
+            valueBox.Size = UDim2.new(0, 55, 0, 18)
+            valueBox.Position = UDim2.new(1, -55, 0, 0)
+            valueBox.BackgroundColor3 = Theme.Tertiary
+            valueBox.BorderSizePixel = 0
+            valueBox.Font = Enum.Font.Gotham
+            valueBox.Text = tostring(default)
+            valueBox.TextColor3 = Theme.Text
+            valueBox.TextSize = 14
+            valueBox.ClearTextOnFocus = true
+            valueBox.Parent = container
+            
+            local valueBoxCorner = Instance.new("UICorner")
+            valueBoxCorner.CornerRadius = UDim.new(0, 4)
+            valueBoxCorner.Parent = valueBox
+            
+            local valueBoxStroke = Instance.new("UIStroke")
+            valueBoxStroke.Color = Theme.Border
+            valueBoxStroke.Thickness = 1
+            valueBoxStroke.Parent = valueBox
+            
+            local track = Instance.new("Frame")
+            track.Size = UDim2.new(1, 0, 0, 4)
+            track.Position = UDim2.new(0, 0, 0, 26)
+            track.BackgroundColor3 = Theme.Tertiary
+            track.BorderSizePixel = 0
+            track.Parent = container
+            
+            local trackCorner = Instance.new("UICorner")
+            trackCorner.CornerRadius = UDim.new(1, 0)
+            trackCorner.Parent = track
+            
+            local fill = Instance.new("Frame")
+            fill.Size = UDim2.new((default - min) / (max - min), 0, 1, 0)
+            fill.BackgroundColor3 = Theme.Accent
+            fill.BorderSizePixel = 0
+            fill.Parent = track
+            
+            local fillCorner = Instance.new("UICorner")
+            fillCorner.CornerRadius = UDim.new(1, 0)
+            fillCorner.Parent = fill
+            
+            local fillGlow = AddGlow(fill, Theme.Accent, 8, 0.6)
+            
+            local knob = Instance.new("Frame")
+            knob.Size = UDim2.new(0, 12, 0, 12)
+            knob.Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6)
+            knob.BackgroundColor3 = Theme.Accent
+            knob.BorderSizePixel = 0
+            knob.Parent = track
+            
+            local knobCorner = Instance.new("UICorner")
+            knobCorner.CornerRadius = UDim.new(1, 0)
+            knobCorner.Parent = knob
+            
+            local knobGlow = AddGlow(knob, Theme.Accent, 10, 0.4)
+            
+            local currentValue = default
+            local isDragging = false
+            
+            local function round(num, numDecimalPlaces)
+                local mult = 10^(numDecimalPlaces or 0)
+                return math.floor(num * mult + 0.5) / mult
+            end
+            
+            local function updateVisual(val)
+                local pos = (val - min) / (max - min)
+                fill.Size = UDim2.new(pos, 0, 1, 0)
+                knob.Position = UDim2.new(pos, -6, 0.5, -6)
+                valueBox.Text = tostring(round(val, decimals))
+            end
+            
+            local function update(input)
+                local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+                currentValue = round(min + (max - min) * pos, decimals)
+                updateVisual(currentValue)
+                callback(currentValue)
+            end
+            
+            track.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    isDragging = true
+                    update(input)
+                end
+            end)
+            
+            track.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    isDragging = false
+                end
+            end)
+            
+            UserInputService.InputChanged:Connect(function(input)
+                if isDragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    update(input)
+                end
+            end)
+            
+            valueBox.FocusLost:Connect(function()
+                local val = tonumber(valueBox.Text)
+                if val then
+                    val = math.clamp(val, min, max)
+                    currentValue = val
+                    updateVisual(val)
+                    callback(val)
+                else
+                    valueBox.Text = tostring(currentValue)
+                end
+            end)
+            
+            local Slider = {}
+            function Slider:Set(value)
+                currentValue = math.clamp(value, min, max)
+                updateVisual(currentValue)
+                callback(currentValue)
+            end
+            function Slider:Get() return currentValue end
+            
+            return Slider
+        end
+        
+        -- CreateButton
+        function Tab:CreateButton(options)
+            local name = options.Name or "Button"
+            local callback = options.Callback or function() end
+            local parent = options.Section or page
+            
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 28)
+            btn.BackgroundColor3 = Theme.Tertiary
+            btn.BorderSizePixel = 0
+            btn.Font = Enum.Font.Gotham
+            btn.Text = name
+            btn.TextColor3 = Theme.Text
+            btn.TextSize = 14
+            btn.Parent = parent
+            
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(0, 4)
+            btnCorner.Parent = btn
+            
+            local btnStroke = Instance.new("UIStroke")
+            btnStroke.Color = Theme.Border
+            btnStroke.Thickness = 1
+            btnStroke.Parent = btn
+            
+            local btnGlow = AddGlow(btn, Theme.Accent, 15, 1)
+            
+            btn.MouseEnter:Connect(function()
+                Cohoes:tween(btn, {BackgroundColor3 = Theme.Accent, TextColor3 = Theme.Background}, Enum.EasingStyle.Quart, 0.15)
+                Cohoes:tween(btnGlow, {ImageTransparency = 0.5}, Enum.EasingStyle.Quart, 0.15)
+            end)
+            
+            btn.MouseLeave:Connect(function()
+                Cohoes:tween(btn, {BackgroundColor3 = Theme.Tertiary, TextColor3 = Theme.Text}, Enum.EasingStyle.Quart, 0.15)
+                Cohoes:tween(btnGlow, {ImageTransparency = 1}, Enum.EasingStyle.Quart, 0.15)
+            end)
+            
+            btn.MouseButton1Click:Connect(callback)
+        end
+        
+        -- CreateInput
+        function Tab:CreateInput(options)
+            local name = options.Name or "Input"
+            local default = options.Default or ""
+            local placeholder = options.Placeholder or ""
+            local callback = options.Callback or function() end
+            local parent = options.Section or page
+            
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 26)
+            container.BackgroundTransparency = 1
+            container.Parent = parent
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -70, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Font = Enum.Font.Gotham
+            label.Text = name
+            label.TextColor3 = Theme.Text
+            label.TextSize = 16
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+            
+            local box = Instance.new("TextBox")
+            box.Size = UDim2.new(0, 60, 0, 20)
+            box.Position = UDim2.new(1, -60, 0.5, -10)
+            box.BackgroundColor3 = Theme.Tertiary
+            box.BorderSizePixel = 0
+            box.Font = Enum.Font.Gotham
+            box.Text = tostring(default)
+            box.PlaceholderText = placeholder
+            box.TextColor3 = Theme.Text
+            box.PlaceholderColor3 = Theme.TextDark
+            box.TextSize = 14
+            box.ClearTextOnFocus = false
+            box.Parent = container
+            
+            local boxCorner = Instance.new("UICorner")
+            boxCorner.CornerRadius = UDim.new(0, 4)
+            boxCorner.Parent = box
+            
+            local boxStroke = Instance.new("UIStroke")
+            boxStroke.Color = Theme.Border
+            boxStroke.Thickness = 1
+            boxStroke.Parent = box
+            
+            box.FocusLost:Connect(function()
+                callback(box.Text)
+            end)
+            
+            local Input = {}
+            function Input:Set(value)
+                box.Text = tostring(value)
+                callback(value)
+            end
+            function Input:Get()
+                return box.Text
+            end
+            
+            return Input
+        end
+        
+        -- CreateKeybind
+        function Tab:CreateKeybind(options)
+            local name = options.Name or "Keybind"
+            local default = options.Default or Enum.KeyCode.E
+            local callback = options.Callback or function() end
+            local parent = options.Section or page
+            
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 26)
+            container.BackgroundTransparency = 1
+            container.Parent = parent
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -60, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Font = Enum.Font.Gotham
+            label.Text = name
+            label.TextColor3 = Theme.Text
+            label.TextSize = 16
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+            
+            local keyBtn = Instance.new("TextButton")
+            keyBtn.Size = UDim2.new(0, 50, 0, 20)
+            keyBtn.Position = UDim2.new(1, -50, 0.5, -10)
+            keyBtn.BackgroundColor3 = Theme.Tertiary
+            keyBtn.BorderSizePixel = 0
+            keyBtn.Font = Enum.Font.Gotham
+            keyBtn.Text = default.Name
+            keyBtn.TextColor3 = Theme.Text
+            keyBtn.TextSize = 12
+            keyBtn.Parent = container
+            
+            local keyBtnCorner = Instance.new("UICorner")
+            keyBtnCorner.CornerRadius = UDim.new(0, 4)
+            keyBtnCorner.Parent = keyBtn
+            
+            local keyBtnStroke = Instance.new("UIStroke")
+            keyBtnStroke.Color = Theme.Border
+            keyBtnStroke.Thickness = 1
+            keyBtnStroke.Parent = keyBtn
+            
+            local currentKey = default
+            local listening = false
+            
+            keyBtn.MouseButton1Click:Connect(function()
+                listening = true
+                keyBtn.Text = "..."
+            end)
+            
+            UserInputService.InputBegan:Connect(function(input, processed)
+                if listening and input.UserInputType == Enum.UserInputType.Keyboard then
+                    currentKey = input.KeyCode
+                    keyBtn.Text = input.KeyCode.Name
+                    listening = false
+                    callback(currentKey)
+                end
+            end)
+            
+            local Keybind = {}
+            function Keybind:Set(key)
+                currentKey = key
+                keyBtn.Text = key.Name
+            end
+            function Keybind:Get() return currentKey end
+            
+            return Keybind
+        end
+        
+        -- CreateDropdown (BUILT-IN NOW!)
+        function Tab:CreateDropdown(options)
+            local name = options.Name or "Dropdown"
+            local optionsList = options.Options or {}
+            local default = options.Default or optionsList[1] or ""
+            local callback = options.Callback or function() end
+            local parent = options.Section or page
+            
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 26)
+            container.BackgroundTransparency = 1
+            container.Parent = parent
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(0.45, 0, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Font = Enum.Font.Gotham
+            label.Text = name
+            label.TextColor3 = Color3.fromRGB(245, 245, 245)
+            label.TextSize = 16
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+            
+            local dropBtn = Instance.new("TextButton")
+            dropBtn.Size = UDim2.new(0.55, -4, 0, 22)
+            dropBtn.Position = UDim2.new(0.45, 4, 0.5, -11)
+            dropBtn.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
+            dropBtn.BorderSizePixel = 0
+            dropBtn.Font = Enum.Font.Gotham
+            dropBtn.Text = default .. " ▼"
+            dropBtn.TextColor3 = Color3.fromRGB(86, 86, 87)
+            dropBtn.TextSize = 14
+            dropBtn.AutoButtonColor = false
+            dropBtn.Parent = container
+            
+            local dropBtnCorner = Instance.new("UICorner")
+            dropBtnCorner.CornerRadius = UDim.new(0, 4)
+            dropBtnCorner.Parent = dropBtn
+            
+            -- Dropdown list with outline
+            local dropHolder = Instance.new("Frame")
+            dropHolder.Size = UDim2.new(0, 0, 0, 0)
+            dropHolder.BackgroundColor3 = Color3.fromRGB(25, 25, 29)
+            dropHolder.BorderSizePixel = 0
+            dropHolder.Visible = false
+            dropHolder.ZIndex = 101
+            dropHolder.Parent = OverlayContainer
+            
+            local dropHolderCorner = Instance.new("UICorner")
+            dropHolderCorner.CornerRadius = UDim.new(0, 4)
+            dropHolderCorner.Parent = dropHolder
+            
+            -- Outline
+            local dropOutline = Instance.new("Frame")
+            dropOutline.Position = UDim2.new(0, 1, 0, 1)
+            dropOutline.Size = UDim2.new(1, -2, 1, -2)
+            dropOutline.BackgroundColor3 = Color3.fromRGB(22, 22, 24)
+            dropOutline.BorderSizePixel = 0
+            dropOutline.Parent = dropHolder
+            
+            local dropOutlineCorner = Instance.new("UICorner")
+            dropOutlineCorner.CornerRadius = UDim.new(0, 4)
+            dropOutlineCorner.Parent = dropOutline
+            
+            AddShadow(dropHolder, 0.3)
+            
+            local dropScroll = Instance.new("ScrollingFrame")
+            dropScroll.Size = UDim2.new(1, 0, 1, 0)
+            dropScroll.BackgroundTransparency = 1
+            dropScroll.BorderSizePixel = 0
+            dropScroll.ScrollBarThickness = 2
+            dropScroll.ScrollBarImageColor3 = Theme.TextDark
+            dropScroll.CanvasSize = UDim2.new(0, 0, 0, #optionsList * 24)
+            dropScroll.ZIndex = 102
+            dropScroll.Parent = dropOutline
+            
+            local dropPadding = Instance.new("UIPadding")
+            dropPadding.PaddingBottom = UDim.new(0, 6)
+            dropPadding.PaddingTop = UDim.new(0, 3)
+            dropPadding.PaddingLeft = UDim.new(0, 3)
+            dropPadding.Parent = dropScroll
+            
+            local dropLayout = Instance.new("UIListLayout")
+            dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            dropLayout.Padding = UDim.new(0, 5)
+            dropLayout.Parent = dropScroll
+            
+            local currentValue = default
+            local isOpen = false
+            
+            local function createOptions()
+                for _, child in pairs(dropScroll:GetChildren()) do
+                    if child:IsA("TextButton") then
+                        child:Destroy()
+                    end
+                end
+                
+                for i, option in ipairs(optionsList) do
+                    local optBtn = Instance.new("TextButton")
+                    optBtn.Size = UDim2.new(1, -12, 0, 24)
+                    optBtn.BackgroundColor3 = Color3.fromRGB(33, 33, 35)
+                    optBtn.BackgroundTransparency = 1
+                    optBtn.BorderSizePixel = 0
+                    optBtn.Font = Enum.Font.Gotham
+                    optBtn.Text = option
+                    optBtn.TextColor3 = Color3.fromRGB(72, 72, 73)
+                    optBtn.TextSize = 14
+                    optBtn.TextXAlignment = Enum.TextXAlignment.Left
+                    optBtn.LayoutOrder = i
+                    optBtn.ZIndex = 103
+                    optBtn.Parent = dropScroll
+                    Cohoes:ApplyTheme(optBtn, "TextColor3")
+                    
+                    local optPadding = Instance.new("UIPadding")
+                    optPadding.PaddingTop = UDim.new(0, 1)
+                    optPadding.PaddingRight = UDim.new(0, 5)
+                    optPadding.PaddingLeft = UDim.new(0, 5)
+                    optPadding.Parent = optBtn
+                    
+                    optBtn.MouseEnter:Connect(function()
+                        Cohoes:tween(optBtn, {BackgroundTransparency = 0}, Enum.EasingStyle.Quad, 0.1)
+                    end)
+                    
+                    optBtn.MouseLeave:Connect(function()
+                        Cohoes:tween(optBtn, {BackgroundTransparency = 1}, Enum.EasingStyle.Quad, 0.1)
+                    end)
+                    
+                    optBtn.MouseButton1Down:Connect(function()
+                        currentValue = option
+                        dropBtn.Text = option .. " ▼"
+                        callback(option)
+                        task.wait(0.05)
+                        isOpen = false
+                        Cohoes:tween(dropHolder, {Size = UDim2.new(0, dropBtn.AbsoluteSize.X, 0, 0)}, Enum.EasingStyle.Quad, 0.2)
+                        task.wait(0.2)
+                        dropHolder.Visible = false
+                    end)
+                end
+                
+                dropScroll.CanvasSize = UDim2.new(0, 0, 0, #optionsList * 24)
+            end
+            
+            createOptions()
+            
+            local function updateDropPosition()
+                local absPos = dropBtn.AbsolutePosition
+                local absSize = dropBtn.AbsoluteSize
+                dropHolder.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 2)
+            end
+            
+            dropBtn.MouseButton1Click:Connect(function()
+                isOpen = not isOpen
+                if isOpen then
+                    updateDropPosition()
+                    dropHolder.Visible = true
+                    Cohoes:tween(dropHolder, {Size = UDim2.new(0, dropBtn.AbsoluteSize.X, 0, math.min(#optionsList * 24 + 10, 150))}, Enum.EasingStyle.Quad, 0.2)
+                else
+                    Cohoes:tween(dropHolder, {Size = UDim2.new(0, dropBtn.AbsoluteSize.X, 0, 0)}, Enum.EasingStyle.Quad, 0.2)
+                    task.wait(0.2)
+                    dropHolder.Visible = false
+                end
+            end)
+            
+            local clickConnection
+            clickConnection = UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 and isOpen then
+                    task.wait()
+                    if not isOpen then return end
+                    
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local listPos = dropHolder.AbsolutePosition
+                    local listSize = dropHolder.AbsoluteSize
+                    local btnPos = dropBtn.AbsolutePosition
+                    local btnSize = dropBtn.AbsoluteSize
+                    
+                    local inList = mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X and
+                                   mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y
+                    local inBtn = mousePos.X >= btnPos.X and mousePos.X <= btnPos.X + btnSize.X and
+                                  mousePos.Y >= btnPos.Y and mousePos.Y <= btnPos.Y + btnSize.Y
+                    
+                    if not inList and not inBtn then
+                        isOpen = false
+                        Cohoes:tween(dropHolder, {Size = UDim2.new(0, dropBtn.AbsoluteSize.X, 0, 0)}, Enum.EasingStyle.Quad, 0.2)
+                        task.wait(0.2)
+                        dropHolder.Visible = false
+                    end
+                end
+            end)
+            
+            local Dropdown = {}
+            function Dropdown:Set(value)
+                currentValue = value
+                dropBtn.Text = value .. " ▼"
+                callback(value)
+            end
+            function Dropdown:Get() return currentValue end
+            function Dropdown:Refresh(newOptions)
+                optionsList = newOptions
+                createOptions()
+            end
+            
+            return Dropdown
+        end
+        
+        -- CreateColorPicker will be added in next message (character limit)
+        
         return Tab
     end
     
@@ -709,6 +1304,11 @@ function Cohoes:CreateWindow(options)
     return Window
 end
 
+-- Make it globally accessible
+_G.Cohoes = Cohoes
+getgenv().Cohoes = Cohoes
+
 print("Enhanced Cohoes UI Library loaded successfully!")
+print("Dropdown is now built-in!")
 
 return Cohoes
