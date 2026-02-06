@@ -1,21 +1,3 @@
---[[
-    COHOES UI LIBRARY v3.0 - ENHANCED EDITION
-    Complete rewrite with glow effects and bug fixes
-    
-    Author: Enhanced by Claude
-    Based on: Original Cohoes UI
-    Inspired by: Milenium UI animations
-    
-    Changelog v3.0:
-    ✅ Added glow effects to ALL elements
-    ✅ FIXED dropdown infinite selection bug
-    ✅ FIXED color picker dragging issues
-    ✅ Smooth Quint easing animations
-    ✅ Enhanced visual depth with shadows
-    ✅ Better hover effects
-    ✅ Pulsing notification glows
-    ✅ Dynamic color glows
-]]
 
 local Cohoes = {}
 local TweenService = game:GetService("TweenService")
@@ -458,7 +440,16 @@ function Cohoes:CreateWindow(options)
         pageLayout.Padding = UDim.new(0, 6)
         pageLayout.Parent = page
         
-        Tabs[name] = {btn = tabBtn, page = page, layout = pageLayout, glow = tabBtnGlow}
+        -- BUGFIX: Proper canvas size updating
+        local function updateCanvasSize()
+            task.wait(0.1) -- Small delay to ensure layout has updated
+            local contentSize = pageLayout.AbsoluteContentSize.Y
+            page.CanvasSize = UDim2.new(0, 0, 0, contentSize + 10)
+        end
+        
+        pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
+        
+        Tabs[name] = {btn = tabBtn, page = page, layout = pageLayout, glow = tabBtnGlow, updateCanvas = updateCanvasSize}
         
         tabBtn.MouseButton1Click:Connect(function()
             if CurrentTab and Tabs[CurrentTab] then
@@ -470,6 +461,8 @@ function Cohoes:CreateWindow(options)
             Cohoes:tween(tabBtn, {TextColor3 = Theme.Text, BackgroundTransparency = 0}, Enum.EasingStyle.Quart, 0.2)
             Cohoes:tween(tabBtnGlow, {ImageTransparency = 0.4}, Enum.EasingStyle.Quart, 0.2)
             page.Visible = true
+            -- BUGFIX: Update canvas size when tab is shown
+            updateCanvasSize()
         end)
         
         tabBtn.MouseEnter:Connect(function()
@@ -483,12 +476,15 @@ function Cohoes:CreateWindow(options)
             end
         end)
         
+        -- BUGFIX: Ensure first tab is properly activated
         if TabCount == 1 then
+            task.wait(0.05) -- Small delay to ensure UI is ready
             tabBtn.TextColor3 = Theme.Text
             tabBtn.BackgroundTransparency = 0
             tabBtnGlow.ImageTransparency = 0.4
             page.Visible = true
             CurrentTab = name
+            updateCanvasSize()
         end
         
         local SectionOrder = 0
@@ -534,15 +530,12 @@ function Cohoes:CreateWindow(options)
             sLabel.LayoutOrder = 0
             sLabel.Parent = section
             
+            -- BUGFIX: Update canvas when section content changes
             sLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-                task.wait()
-                local totalHeight = 0
-                for _, child in pairs(page:GetChildren()) do
-                    if child:IsA("Frame") then
-                        totalHeight = totalHeight + child.AbsoluteSize.Y + 6
-                    end
+                task.wait(0.05)
+                if Tabs[CurrentTab] and Tabs[CurrentTab].updateCanvas then
+                    Tabs[CurrentTab].updateCanvas()
                 end
-                page.CanvasSize = UDim2.new(0, 0, 0, totalHeight)
             end)
             
             return section, sLayout
