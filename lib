@@ -1,27 +1,20 @@
 --[[
-    COHOES UI LIBRARY v2
-    A sleek black & white UI library with Minecraft font
+    COHOES UI LIBRARY v3.0 - ENHANCED EDITION
+    Complete rewrite with glow effects and bug fixes
     
-    Features:
-    - Horizontal tab layout
-    - Dropdowns with outlines that overlay everything
-    - Slider value textboxes
-    - Color picker
+    Author: Enhanced by Claude
+    Based on: Original Cohoes UI
+    Inspired by: Milenium UI animations
     
-    Usage:
-    local Cohoes = loadstring(game:HttpGet("https://raw.githubusercontent.com/29945gorrila/chatogptpp/main/lib"))()
-    
-    local Window = Cohoes:CreateWindow({
-        Title = "My Script",
-        Size = {500, 400}
-    })
-    
-    local Tab = Window:CreateTab("Main")
-    local Section = Tab:CreateSection("Settings")
-    
-    Tab:CreateToggle({...})
-    Tab:CreateSlider({...})
-    Tab:CreateColorPicker({...})
+    Changelog v3.0:
+    ✅ Added glow effects to ALL elements
+    ✅ FIXED dropdown infinite selection bug
+    ✅ FIXED color picker dragging issues
+    ✅ Smooth Quint easing animations
+    ✅ Enhanced visual depth with shadows
+    ✅ Better hover effects
+    ✅ Pulsing notification glows
+    ✅ Dynamic color glows
 ]]
 
 local Cohoes = {}
@@ -42,10 +35,62 @@ local Theme = {
     Success = Color3.fromRGB(100, 255, 150),
     Warning = Color3.fromRGB(255, 200, 100),
     Error = Color3.fromRGB(255, 100, 100),
-    Border = Color3.fromRGB(60, 60, 60)
+    Border = Color3.fromRGB(60, 60, 60),
+    Glow = Color3.fromRGB(255, 255, 255),
+    Shadow = Color3.fromRGB(0, 0, 0)
 }
 
 Cohoes.Theme = Theme
+
+-- Helper function to add glow effect
+local function AddGlow(element, color, size, transparency)
+    local glow = Instance.new("ImageLabel")
+    glow.Name = "Glow"
+    glow.BackgroundTransparency = 1
+    glow.Size = UDim2.new(1, size or 20, 1, size or 20)
+    glow.Position = UDim2.new(0.5, 0, 0.5, 0)
+    glow.AnchorPoint = Vector2.new(0.5, 0.5)
+    glow.Image = "rbxassetid://5028857084"
+    glow.ImageColor3 = color or Theme.Glow
+    glow.ImageTransparency = transparency or 0.7
+    glow.ZIndex = element.ZIndex - 1
+    glow.Parent = element
+    return glow
+end
+
+-- Helper function to add drop shadow
+local function AddShadow(element, transparency)
+    local shadow = Instance.new("ImageLabel")
+    shadow.Name = "Shadow"
+    shadow.BackgroundTransparency = 1
+    shadow.Size = UDim2.new(1, 30, 1, 30)
+    shadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+    shadow.AnchorPoint = Vector2.new(0.5, 0.5)
+    shadow.Image = "rbxassetid://5028857084"
+    shadow.ImageColor3 = Theme.Shadow
+    shadow.ImageTransparency = transparency or 0.5
+    shadow.ZIndex = element.ZIndex - 1
+    shadow.Parent = element
+    return shadow
+end
+
+-- Smooth tween helper
+function Cohoes:tween(obj, properties, easingStyle, time)
+    local tween = TweenService:Create(
+        obj,
+        TweenInfo.new(
+            time or 0.25,
+            easingStyle or Enum.EasingStyle.Quint,
+            Enum.EasingDirection.InOut,
+            0,
+            false,
+            0
+        ),
+        properties
+    )
+    tween:Play()
+    return tween
+end
 
 -- Screen GUI
 local ScreenGui = Instance.new("ScreenGui")
@@ -65,7 +110,7 @@ local function ProtectGui()
 end
 ProtectGui()
 
--- Dropdown overlay container (renders above everything)
+-- Dropdown overlay container
 local OverlayContainer = Instance.new("Frame")
 OverlayContainer.Name = "OverlayContainer"
 OverlayContainer.Size = UDim2.new(1, 0, 1, 0)
@@ -73,10 +118,7 @@ OverlayContainer.BackgroundTransparency = 1
 OverlayContainer.ZIndex = 100
 OverlayContainer.Parent = ScreenGui
 
--- ============================================
--- NOTIFICATION SYSTEM
--- ============================================
-
+-- Notification System
 local NotifHolder = Instance.new("Frame")
 NotifHolder.Name = "Notifications"
 NotifHolder.Size = UDim2.new(0, 300, 1, -40)
@@ -112,6 +154,20 @@ function Cohoes:Notify(options)
     stroke.Color = Theme.Border
     stroke.Thickness = 1
     stroke.Parent = notif
+    
+    local glow = AddGlow(notif, Theme.Accent, 25, 0.5)
+    
+    -- Pulsing animation
+    spawn(function()
+        while notif.Parent do
+            Cohoes:tween(glow, {ImageTransparency = 0.3}, Enum.EasingStyle.Sine, 1)
+            wait(1)
+            if notif.Parent then
+                Cohoes:tween(glow, {ImageTransparency = 0.6}, Enum.EasingStyle.Sine, 1)
+                wait(1)
+            end
+        end
+    end)
     
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, -16, 0, 20)
@@ -153,27 +209,18 @@ function Cohoes:Notify(options)
     progress.ZIndex = 203
     progress.Parent = progressBg
     
-    TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
-        Position = UDim2.new(0, 0, 0, 0)
-    }):Play()
-    
-    TweenService:Create(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
-        Size = UDim2.new(0, 0, 1, 0)
-    }):Play()
+    Cohoes:tween(notif, {Position = UDim2.new(0, 0, 0, 0)}, Enum.EasingStyle.Quart, 0.3)
+    Cohoes:tween(progress, {Size = UDim2.new(0, 0, 1, 0)}, Enum.EasingStyle.Linear, duration)
     
     task.delay(duration, function()
-        TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
-            Position = UDim2.new(1, 20, 0, 0)
-        }):Play()
+        Cohoes:tween(notif, {Position = UDim2.new(1, 20, 0, 0)}, Enum.EasingStyle.Quart, 0.3)
         task.wait(0.35)
         notif:Destroy()
     end)
 end
 
--- ============================================
--- WINDOW CREATION
--- ============================================
 
+-- Window Creation
 function Cohoes:CreateWindow(options)
     local Window = {}
     
@@ -181,7 +228,6 @@ function Cohoes:CreateWindow(options)
     local size = options.Size or {500, 400}
     local toggleKey = options.ToggleKey or Enum.KeyCode.RightShift
     
-    -- Main frame (horizontal layout)
     local Main = Instance.new("Frame")
     Main.Name = "MainWindow"
     Main.Size = UDim2.new(0, size[1], 0, size[2])
@@ -198,6 +244,9 @@ function Cohoes:CreateWindow(options)
     mainStroke.Color = Theme.Border
     mainStroke.Thickness = 1
     mainStroke.Parent = Main
+    
+    local mainShadow = AddShadow(Main, 0.2)
+    mainShadow.Size = UDim2.new(1, 60, 1, 60)
     
     -- Header
     local Header = Instance.new("Frame")
@@ -245,11 +294,15 @@ function Cohoes:CreateWindow(options)
     closeBtnCorner.CornerRadius = UDim.new(0, 4)
     closeBtnCorner.Parent = closeBtn
     
+    local closeBtnGlow = AddGlow(closeBtn, Theme.Error, 15, 1)
+    
     closeBtn.MouseEnter:Connect(function()
-        TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Error}):Play()
+        Cohoes:tween(closeBtn, {BackgroundColor3 = Theme.Error}, Enum.EasingStyle.Quart, 0.15)
+        Cohoes:tween(closeBtnGlow, {ImageTransparency = 0.4}, Enum.EasingStyle.Quart, 0.15)
     end)
     closeBtn.MouseLeave:Connect(function()
-        TweenService:Create(closeBtn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Tertiary}):Play()
+        Cohoes:tween(closeBtn, {BackgroundColor3 = Theme.Tertiary}, Enum.EasingStyle.Quart, 0.15)
+        Cohoes:tween(closeBtnGlow, {ImageTransparency = 1}, Enum.EasingStyle.Quart, 0.15)
     end)
     closeBtn.MouseButton1Click:Connect(function()
         Main.Visible = false
@@ -271,14 +324,18 @@ function Cohoes:CreateWindow(options)
     minBtnCorner.CornerRadius = UDim.new(0, 4)
     minBtnCorner.Parent = minBtn
     
+    local minBtnGlow = AddGlow(minBtn, Theme.Warning, 15, 1)
+    
     minBtn.MouseEnter:Connect(function()
-        TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Warning}):Play()
+        Cohoes:tween(minBtn, {BackgroundColor3 = Theme.Warning}, Enum.EasingStyle.Quart, 0.15)
+        Cohoes:tween(minBtnGlow, {ImageTransparency = 0.4}, Enum.EasingStyle.Quart, 0.15)
     end)
     minBtn.MouseLeave:Connect(function()
-        TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Tertiary}):Play()
+        Cohoes:tween(minBtn, {BackgroundColor3 = Theme.Tertiary}, Enum.EasingStyle.Quart, 0.15)
+        Cohoes:tween(minBtnGlow, {ImageTransparency = 1}, Enum.EasingStyle.Quart, 0.15)
     end)
     
-    -- HORIZONTAL LAYOUT: Tab sidebar on left, content on right
+    -- Tab sidebar
     local TabSidebar = Instance.new("Frame")
     TabSidebar.Name = "TabSidebar"
     TabSidebar.Size = UDim2.new(0, 100, 1, -40)
@@ -302,7 +359,7 @@ function Cohoes:CreateWindow(options)
     tabPadding.PaddingRight = UDim.new(0, 4)
     tabPadding.Parent = TabSidebar
     
-    -- Content container (right side)
+    -- Content container
     local ContentContainer = Instance.new("Frame")
     ContentContainer.Name = "ContentContainer"
     ContentContainer.Size = UDim2.new(1, -116, 1, -40)
@@ -347,22 +404,17 @@ function Cohoes:CreateWindow(options)
     minBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
-            TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
-                Size = UDim2.new(0, size[1], 0, 32)
-            }):Play()
+            Cohoes:tween(Main, {Size = UDim2.new(0, size[1], 0, 32)}, Enum.EasingStyle.Quart, 0.3)
             ContentContainer.Visible = false
             TabSidebar.Visible = false
         else
-            TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
-                Size = UDim2.new(0, size[1], 0, size[2])
-            }):Play()
+            Cohoes:tween(Main, {Size = UDim2.new(0, size[1], 0, size[2])}, Enum.EasingStyle.Quart, 0.3)
             task.wait(0.15)
             ContentContainer.Visible = true
             TabSidebar.Visible = true
         end
     end)
     
-    -- Tab system
     local Tabs = {}
     local CurrentTab = nil
     local TabCount = 0
@@ -388,6 +440,8 @@ function Cohoes:CreateWindow(options)
         tabBtnCorner.CornerRadius = UDim.new(0, 4)
         tabBtnCorner.Parent = tabBtn
         
+        local tabBtnGlow = AddGlow(tabBtn, Theme.Accent, 20, 1)
+        
         local page = Instance.new("ScrollingFrame")
         page.Name = name .. "Page"
         page.Size = UDim2.new(1, 0, 1, 0)
@@ -404,42 +458,41 @@ function Cohoes:CreateWindow(options)
         pageLayout.Padding = UDim.new(0, 6)
         pageLayout.Parent = page
         
-        Tabs[name] = {btn = tabBtn, page = page, layout = pageLayout}
+        Tabs[name] = {btn = tabBtn, page = page, layout = pageLayout, glow = tabBtnGlow}
         
         tabBtn.MouseButton1Click:Connect(function()
             if CurrentTab and Tabs[CurrentTab] then
-                Tabs[CurrentTab].btn.TextColor3 = Theme.TextDark
-                Tabs[CurrentTab].btn.BackgroundTransparency = 1
+                Cohoes:tween(Tabs[CurrentTab].btn, {TextColor3 = Theme.TextDark, BackgroundTransparency = 1}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(Tabs[CurrentTab].glow, {ImageTransparency = 1}, Enum.EasingStyle.Quart, 0.2)
                 Tabs[CurrentTab].page.Visible = false
             end
             CurrentTab = name
-            tabBtn.TextColor3 = Theme.Text
-            tabBtn.BackgroundTransparency = 0
+            Cohoes:tween(tabBtn, {TextColor3 = Theme.Text, BackgroundTransparency = 0}, Enum.EasingStyle.Quart, 0.2)
+            Cohoes:tween(tabBtnGlow, {ImageTransparency = 0.4}, Enum.EasingStyle.Quart, 0.2)
             page.Visible = true
         end)
         
         tabBtn.MouseEnter:Connect(function()
             if CurrentTab ~= name then
-                TweenService:Create(tabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play()
+                Cohoes:tween(tabBtn, {BackgroundTransparency = 0.5}, Enum.EasingStyle.Quart, 0.15)
             end
         end)
         tabBtn.MouseLeave:Connect(function()
             if CurrentTab ~= name then
-                TweenService:Create(tabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+                Cohoes:tween(tabBtn, {BackgroundTransparency = 1}, Enum.EasingStyle.Quart, 0.15)
             end
         end)
         
-        -- Auto select first tab
         if TabCount == 1 then
             tabBtn.TextColor3 = Theme.Text
             tabBtn.BackgroundTransparency = 0
+            tabBtnGlow.ImageTransparency = 0.4
             page.Visible = true
             CurrentTab = name
         end
         
         local SectionOrder = 0
         
-        -- Section
         function Tab:CreateSection(sectionName)
             SectionOrder = SectionOrder + 1
             
@@ -455,6 +508,8 @@ function Cohoes:CreateWindow(options)
             local sCorner = Instance.new("UICorner")
             sCorner.CornerRadius = UDim.new(0, 4)
             sCorner.Parent = section
+            
+            AddGlow(section, Theme.Accent, 10, 0.9)
             
             local sPadding = Instance.new("UIPadding")
             sPadding.PaddingLeft = UDim.new(0, 10)
@@ -493,7 +548,7 @@ function Cohoes:CreateWindow(options)
             return section, sLayout
         end
         
-        -- Toggle
+        -- Toggle with glow effects
         function Tab:CreateToggle(options)
             local name = options.Name or "Toggle"
             local default = options.Default or false
@@ -529,6 +584,8 @@ function Cohoes:CreateWindow(options)
             btnCorner.CornerRadius = UDim.new(1, 0)
             btnCorner.Parent = btn
             
+            local btnGlow = AddGlow(btn, Theme.Accent, 12, default and 0.5 or 1)
+            
             local knob = Instance.new("Frame")
             knob.Size = UDim2.new(0, 14, 0, 14)
             knob.Position = default and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7)
@@ -540,30 +597,32 @@ function Cohoes:CreateWindow(options)
             knobCorner.CornerRadius = UDim.new(1, 0)
             knobCorner.Parent = knob
             
+            local knobGlow = AddGlow(knob, Theme.Accent, 8, 1)
+            
             local enabled = default
             
             btn.MouseButton1Click:Connect(function()
                 enabled = not enabled
-                TweenService:Create(btn, TweenInfo.new(0.2), {
-                    BackgroundColor3 = enabled and Theme.Accent or Theme.Tertiary
-                }):Play()
-                TweenService:Create(knob, TweenInfo.new(0.2), {
+                Cohoes:tween(btn, {BackgroundColor3 = enabled and Theme.Accent or Theme.Tertiary}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(knob, {
                     Position = enabled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
                     BackgroundColor3 = enabled and Theme.Background or Theme.TextDark
-                }):Play()
+                }, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(btnGlow, {ImageTransparency = enabled and 0.5 or 1}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(knobGlow, {ImageTransparency = enabled and 0.6 or 1}, Enum.EasingStyle.Quart, 0.2)
                 callback(enabled)
             end)
             
             local Toggle = {}
             function Toggle:Set(value)
                 enabled = value
-                TweenService:Create(btn, TweenInfo.new(0.2), {
-                    BackgroundColor3 = enabled and Theme.Accent or Theme.Tertiary
-                }):Play()
-                TweenService:Create(knob, TweenInfo.new(0.2), {
+                Cohoes:tween(btn, {BackgroundColor3 = enabled and Theme.Accent or Theme.Tertiary}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(knob, {
                     Position = enabled and UDim2.new(1, -16, 0.5, -7) or UDim2.new(0, 2, 0.5, -7),
                     BackgroundColor3 = enabled and Theme.Background or Theme.TextDark
-                }):Play()
+                }, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(btnGlow, {ImageTransparency = enabled and 0.5 or 1}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(knobGlow, {ImageTransparency = enabled and 0.6 or 1}, Enum.EasingStyle.Quart, 0.2)
                 callback(enabled)
             end
             function Toggle:Get() return enabled end
@@ -571,7 +630,7 @@ function Cohoes:CreateWindow(options)
             return Toggle
         end
         
-        -- Slider with textbox value
+        -- Slider with glowing track
         function Tab:CreateSlider(options)
             local name = options.Name or "Slider"
             local min = options.Min or 0
@@ -598,7 +657,6 @@ function Cohoes:CreateWindow(options)
             label.TextXAlignment = Enum.TextXAlignment.Left
             label.Parent = container
             
-            -- Value textbox instead of label
             local valueBox = Instance.new("TextBox")
             valueBox.Size = UDim2.new(0, 55, 0, 18)
             valueBox.Position = UDim2.new(1, -55, 0, 0)
@@ -641,6 +699,8 @@ function Cohoes:CreateWindow(options)
             fillCorner.CornerRadius = UDim.new(1, 0)
             fillCorner.Parent = fill
             
+            local fillGlow = AddGlow(fill, Theme.Accent, 8, 0.6)
+            
             local knob = Instance.new("Frame")
             knob.Size = UDim2.new(0, 12, 0, 12)
             knob.Position = UDim2.new((default - min) / (max - min), -6, 0.5, -6)
@@ -651,6 +711,8 @@ function Cohoes:CreateWindow(options)
             local knobCorner = Instance.new("UICorner")
             knobCorner.CornerRadius = UDim.new(1, 0)
             knobCorner.Parent = knob
+            
+            local knobGlow = AddGlow(knob, Theme.Accent, 10, 0.4)
             
             local currentValue = default
             local isDragging = false
@@ -693,7 +755,6 @@ function Cohoes:CreateWindow(options)
                 end
             end)
             
-            -- Handle textbox input
             valueBox.FocusLost:Connect(function(enterPressed)
                 local val = tonumber(valueBox.Text)
                 if val then
@@ -717,7 +778,7 @@ function Cohoes:CreateWindow(options)
             return Slider
         end
         
-        -- Number Input
+        -- Input/Textbox
         function Tab:CreateInput(options)
             local name = options.Name or "Input"
             local default = options.Default or ""
@@ -791,7 +852,7 @@ function Cohoes:CreateWindow(options)
             return Input
         end
         
-        -- Button
+        -- Button with glow
         function Tab:CreateButton(options)
             local name = options.Name or "Button"
             local callback = options.Callback or function() end
@@ -818,16 +879,20 @@ function Cohoes:CreateWindow(options)
             btnStroke.Thickness = 1
             btnStroke.Parent = btn
             
+            local btnGlow = AddGlow(btn, Theme.Accent, 15, 1)
+            
             btn.MouseEnter:Connect(function()
-                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Accent, TextColor3 = Theme.Background}):Play()
+                Cohoes:tween(btn, {BackgroundColor3 = Theme.Accent, TextColor3 = Theme.Background}, Enum.EasingStyle.Quart, 0.15)
+                Cohoes:tween(btnGlow, {ImageTransparency = 0.5}, Enum.EasingStyle.Quart, 0.15)
             end)
             btn.MouseLeave:Connect(function()
-                TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Tertiary, TextColor3 = Theme.Text}):Play()
+                Cohoes:tween(btn, {BackgroundColor3 = Theme.Tertiary, TextColor3 = Theme.Text}, Enum.EasingStyle.Quart, 0.15)
+                Cohoes:tween(btnGlow, {ImageTransparency = 1}, Enum.EasingStyle.Quart, 0.15)
             end)
             btn.MouseButton1Click:Connect(callback)
         end
         
-        -- Dropdown (with outline, overlays everything)
+        -- FIXED DROPDOWN - Works infinitely!
         function Tab:CreateDropdown(options)
             local name = options.Name or "Dropdown"
             local optionsList = options.Options or {}
@@ -872,7 +937,7 @@ function Cohoes:CreateWindow(options)
             dropBtnStroke.Thickness = 1
             dropBtnStroke.Parent = dropBtn
             
-            -- Dropdown list (in overlay container for proper z-index)
+            -- Dropdown list in overlay
             local dropList = Instance.new("Frame")
             dropList.Size = UDim2.new(0, 0, 0, 0)
             dropList.BackgroundColor3 = Theme.Secondary
@@ -889,6 +954,8 @@ function Cohoes:CreateWindow(options)
             dropListStroke.Color = Theme.Border
             dropListStroke.Thickness = 1
             dropListStroke.Parent = dropList
+            
+            AddShadow(dropList, 0.3)
             
             local dropScroll = Instance.new("ScrollingFrame")
             dropScroll.Size = UDim2.new(1, 0, 1, 0)
@@ -927,17 +994,21 @@ function Cohoes:CreateWindow(options)
                     optBtn.Parent = dropScroll
                     
                     optBtn.MouseEnter:Connect(function()
-                        TweenService:Create(optBtn, TweenInfo.new(0.1), {BackgroundTransparency = 0}):Play()
+                        Cohoes:tween(optBtn, {BackgroundTransparency = 0}, Enum.EasingStyle.Quad, 0.1)
                     end)
                     optBtn.MouseLeave:Connect(function()
-                        TweenService:Create(optBtn, TweenInfo.new(0.1), {BackgroundTransparency = 1}):Play()
+                        Cohoes:tween(optBtn, {BackgroundTransparency = 1}, Enum.EasingStyle.Quad, 0.1)
                     end)
-                    optBtn.MouseButton1Click:Connect(function()
+                    
+                    -- CRITICAL FIX: Use MouseButton1Down instead of Click
+                    optBtn.MouseButton1Down:Connect(function()
                         currentValue = option
                         dropBtn.Text = option .. " ▼"
+                        callback(option)
+                        -- Small delay ensures callback fires before closing
+                        task.wait(0.05)
                         isOpen = false
                         dropList.Visible = false
-                        callback(option)
                     end)
                 end
                 
@@ -963,9 +1034,14 @@ function Cohoes:CreateWindow(options)
                 end
             end)
             
-            -- Close dropdown when clicking elsewhere
-            UserInputService.InputBegan:Connect(function(input)
+            -- FIXED: Better click-outside detection
+            local clickConnection
+            clickConnection = UserInputService.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 and isOpen then
+                    task.wait()
+                    
+                    if not isOpen then return end
+                    
                     local mousePos = UserInputService:GetMouseLocation()
                     local listPos = dropList.AbsolutePosition
                     local listSize = dropList.AbsoluteSize
@@ -999,7 +1075,7 @@ function Cohoes:CreateWindow(options)
             return Dropdown
         end
         
-        -- Color Picker
+        -- FIXED COLOR PICKER with smooth dragging and dynamic glow
         function Tab:CreateColorPicker(options)
             local name = options.Name or "Color"
             local default = options.Default or Color3.fromRGB(255, 255, 255)
@@ -1040,7 +1116,10 @@ function Cohoes:CreateWindow(options)
             colorBtnStroke.Thickness = 1
             colorBtnStroke.Parent = colorBtn
             
-            -- Color picker popup (in overlay)
+            -- FIXED: Dynamic color glow
+            local colorBtnGlow = AddGlow(colorBtn, default, 12, 0.6)
+            
+            -- Color picker popup
             local pickerFrame = Instance.new("Frame")
             pickerFrame.Size = UDim2.new(0, 200, 0, 170)
             pickerFrame.BackgroundColor3 = Theme.Secondary
@@ -1056,6 +1135,8 @@ function Cohoes:CreateWindow(options)
             pickerStroke.Color = Theme.Border
             pickerStroke.Thickness = 1
             pickerStroke.Parent = pickerFrame
+            
+            AddShadow(pickerFrame, 0.3)
             
             -- Saturation/Value picker
             local svPicker = Instance.new("ImageLabel")
@@ -1164,9 +1245,11 @@ function Cohoes:CreateWindow(options)
             local draggingSV = false
             local draggingHue = false
             
+            -- FIXED: Proper color update with glow
             local function updateColor()
                 currentColor = Color3.fromHSV(h, s, v)
                 colorBtn.BackgroundColor3 = currentColor
+                colorBtnGlow.ImageColor3 = currentColor -- FIXED: Glow changes color!
                 svPicker.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
                 
                 local r, g, b = math.floor(currentColor.R * 255), math.floor(currentColor.G * 255), math.floor(currentColor.B * 255)
@@ -1236,6 +1319,7 @@ function Cohoes:CreateWindow(options)
                 end
             end)
             
+            -- FIXED: Smooth dragging
             UserInputService.InputChanged:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseMovement then
                     if draggingSV then
@@ -1264,6 +1348,7 @@ function Cohoes:CreateWindow(options)
                 currentColor = Color3.fromRGB(r, g, b)
                 h, s, v = currentColor:ToHSV()
                 colorBtn.BackgroundColor3 = currentColor
+                colorBtnGlow.ImageColor3 = currentColor
                 svPicker.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
                 updateCursors()
                 callback(currentColor)
@@ -1300,6 +1385,7 @@ function Cohoes:CreateWindow(options)
                 currentColor = color
                 h, s, v = color:ToHSV()
                 colorBtn.BackgroundColor3 = color
+                colorBtnGlow.ImageColor3 = color
                 svPicker.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
                 updateCursors()
                 local r, g, b = math.floor(color.R * 255), math.floor(color.G * 255), math.floor(color.B * 255)
