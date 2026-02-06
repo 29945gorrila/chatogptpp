@@ -3,13 +3,14 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
+local HttpService = game:GetService("HttpService")
 
 -- Theme
 local Theme = {
     Background = Color3.fromRGB(10, 10, 10),
     Secondary = Color3.fromRGB(18, 18, 18),
     Tertiary = Color3.fromRGB(30, 30, 30),
-    Accent = Color3.fromRGB(255, 255, 255),
+    Accent = Color3.fromRGB(155, 150, 219),
     AccentDark = Color3.fromRGB(200, 200, 200),
     Text = Color3.fromRGB(255, 255, 255),
     TextDark = Color3.fromRGB(120, 120, 120),
@@ -22,6 +23,33 @@ local Theme = {
 }
 
 Cohoes.Theme = Theme
+Cohoes.Flags = {}
+Cohoes.ConfigFlags = {}
+
+-- Utility for theme updating
+local ThemeObjects = {
+    accent = {
+        BackgroundColor3 = {},
+        TextColor3 = {},
+        ImageColor3 = {},
+        ScrollBarImageColor3 = {}
+    }
+}
+
+function Cohoes:ApplyTheme(instance, property)
+    table.insert(ThemeObjects.accent[property], instance)
+end
+
+function Cohoes:UpdateTheme(color)
+    for property, objects in pairs(ThemeObjects.accent) do
+        for _, obj in pairs(objects) do
+            if obj[property] == Theme.Accent then
+                obj[property] = color
+            end
+        end
+    end
+    Theme.Accent = color
+end
 
 -- Helper function to add glow effect
 local function AddGlow(element, color, size, transparency)
@@ -39,19 +67,27 @@ local function AddGlow(element, color, size, transparency)
     return glow
 end
 
--- Helper function to add drop shadow
+-- Helper function to add drop shadow (enhanced version)
 local function AddShadow(element, transparency)
     local shadow = Instance.new("ImageLabel")
     shadow.Name = "Shadow"
     shadow.BackgroundTransparency = 1
-    shadow.Size = UDim2.new(1, 30, 1, 30)
-    shadow.Position = UDim2.new(0.5, 0, 0.5, 2)
+    shadow.Size = UDim2.new(1, 75, 1, 75)
+    shadow.Position = UDim2.new(0.5, 0, 0.5, 0)
     shadow.AnchorPoint = Vector2.new(0.5, 0.5)
-    shadow.Image = "rbxassetid://5028857084"
-    shadow.ImageColor3 = Theme.Shadow
+    shadow.Image = "rbxassetid://112971167999062"
+    shadow.ImageColor3 = Color3.fromRGB(0, 0, 0)
     shadow.ImageTransparency = transparency or 0.5
-    shadow.ZIndex = element.ZIndex - 1
+    shadow.ZIndex = element.ZIndex - 100
+    shadow.ScaleType = Enum.ScaleType.Slice
+    shadow.SliceCenter = Rect.new(Vector2.new(112, 112), Vector2.new(147, 147))
+    shadow.SliceScale = 0.75
     shadow.Parent = element
+    
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 5)
+    corner.Parent = shadow
+    
     return shadow
 end
 
@@ -79,9 +115,8 @@ ScreenGui.Name = "CohoesUI"
 ScreenGui.ResetOnSpawn = false
 ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
 
--- FIX: Better GUI protection with error handling
 local function ProtectGui()
-    local success, err = pcall(function()
+    local success = pcall(function()
         if syn and syn.protect_gui then
             syn.protect_gui(ScreenGui)
             ScreenGui.Parent = game.CoreGui
@@ -93,8 +128,6 @@ local function ProtectGui()
     end)
     
     if not success then
-        warn("Cohoes UI: Failed to protect GUI - " .. tostring(err))
-        -- Fallback: try PlayerGui
         pcall(function()
             ScreenGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui")
         end)
@@ -150,23 +183,11 @@ function Cohoes:Notify(options)
     
     local glow = AddGlow(notif, Theme.Accent, 25, 0.5)
     
-    -- Pulsing animation
-    spawn(function()
-        while notif.Parent do
-            Cohoes:tween(glow, {ImageTransparency = 0.3}, Enum.EasingStyle.Sine, 1)
-            wait(1)
-            if notif.Parent then
-                Cohoes:tween(glow, {ImageTransparency = 0.6}, Enum.EasingStyle.Sine, 1)
-                wait(1)
-            end
-        end
-    end)
-    
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, -16, 0, 20)
     titleLabel.Position = UDim2.new(0, 8, 0, 6)
     titleLabel.BackgroundTransparency = 1
-    titleLabel.Font = Enum.Font.Gotham
+    titleLabel.Font = Enum.Font.GothamBold
     titleLabel.Text = title
     titleLabel.TextColor3 = Theme.Text
     titleLabel.TextSize = 12
@@ -216,8 +237,9 @@ end
 function Cohoes:CreateWindow(options)
     local Window = {}
     
-    local title = options.Title or "Cohoes UI"
-    local size = options.Size or {500, 400}
+    local title = options.Title or "skibi.cc"
+    local subtitle = options.Subtitle or "premium"
+    local size = options.Size or {700, 565}
     local toggleKey = options.ToggleKey or Enum.KeyCode.RightShift
     
     local Main = Instance.new("Frame")
@@ -229,16 +251,16 @@ function Cohoes:CreateWindow(options)
     Main.Parent = ScreenGui
     
     local mainCorner = Instance.new("UICorner")
-    mainCorner.CornerRadius = UDim.new(0, 6)
+    mainCorner.CornerRadius = UDim.new(0, 10)
     mainCorner.Parent = Main
     
     local mainStroke = Instance.new("UIStroke")
-    mainStroke.Color = Theme.Border
+    mainStroke.Color = Color3.fromRGB(23, 23, 29)
     mainStroke.Thickness = 1
     mainStroke.Parent = Main
     
+    -- Enhanced shadow
     local mainShadow = AddShadow(Main, 0.2)
-    mainShadow.Size = UDim2.new(1, 60, 1, 60)
     
     -- Header
     local Header = Instance.new("Frame")
@@ -249,7 +271,7 @@ function Cohoes:CreateWindow(options)
     Header.Parent = Main
     
     local headerCorner = Instance.new("UICorner")
-    headerCorner.CornerRadius = UDim.new(0, 6)
+    headerCorner.CornerRadius = UDim.new(0, 10)
     headerCorner.Parent = Header
     
     local headerFix = Instance.new("Frame")
@@ -259,16 +281,19 @@ function Cohoes:CreateWindow(options)
     headerFix.BorderSizePixel = 0
     headerFix.Parent = Header
     
+    -- Title with RichText styling
     local titleLabel = Instance.new("TextLabel")
     titleLabel.Size = UDim2.new(1, -70, 1, 0)
     titleLabel.Position = UDim2.new(0, 12, 0, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Font = Enum.Font.GothamBold
-    titleLabel.Text = string.upper(title)
-    titleLabel.TextColor3 = Theme.Text
-    titleLabel.TextSize = 12
+    titleLabel.Text = string.format('<u>%s</u><font color="rgb(255, 255, 255)">%s</font>', title, subtitle)
+    titleLabel.RichText = true
+    titleLabel.TextColor3 = Theme.Accent
+    titleLabel.TextSize = 16
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = Header
+    Cohoes:ApplyTheme(titleLabel, "TextColor3")
     
     -- Close button
     local closeBtn = Instance.new("TextButton")
@@ -330,35 +355,100 @@ function Cohoes:CreateWindow(options)
     -- Tab sidebar
     local TabSidebar = Instance.new("Frame")
     TabSidebar.Name = "TabSidebar"
-    TabSidebar.Size = UDim2.new(0, 100, 1, -40)
+    TabSidebar.Size = UDim2.new(0, 196, 1, -40)
     TabSidebar.Position = UDim2.new(0, 4, 0, 36)
     TabSidebar.BackgroundColor3 = Theme.Secondary
+    TabSidebar.BackgroundTransparency = 1
     TabSidebar.BorderSizePixel = 0
     TabSidebar.Parent = Main
     
-    local sidebarCorner = Instance.new("UICorner")
-    sidebarCorner.CornerRadius = UDim.new(0, 4)
-    sidebarCorner.Parent = TabSidebar
+    -- Sidebar divider
+    local sidebarDivider = Instance.new("Frame")
+    sidebarDivider.AnchorPoint = Vector2.new(1, 0)
+    sidebarDivider.Position = UDim2.new(1, 0, 0, 0)
+    sidebarDivider.Size = UDim2.new(0, 1, 1, 0)
+    sidebarDivider.BackgroundColor3 = Color3.fromRGB(21, 21, 23)
+    sidebarDivider.BorderSizePixel = 0
+    sidebarDivider.Parent = TabSidebar
     
     local tabLayout = Instance.new("UIListLayout")
     tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    tabLayout.Padding = UDim.new(0, 2)
+    tabLayout.Padding = UDim.new(0, 5)
     tabLayout.Parent = TabSidebar
     
     local tabPadding = Instance.new("UIPadding")
-    tabPadding.PaddingTop = UDim.new(0, 4)
-    tabPadding.PaddingLeft = UDim.new(0, 4)
-    tabPadding.PaddingRight = UDim.new(0, 4)
+    tabPadding.PaddingTop = UDim.new(0, 16)
+    tabPadding.PaddingBottom = UDim.new(0, 36)
+    tabPadding.PaddingLeft = UDim.new(0, 10)
+    tabPadding.PaddingRight = UDim.new(0, 11)
     tabPadding.Parent = TabSidebar
     
     -- Content container
     local ContentContainer = Instance.new("Frame")
     ContentContainer.Name = "ContentContainer"
-    ContentContainer.Size = UDim2.new(1, -116, 1, -40)
-    ContentContainer.Position = UDim2.new(0, 110, 0, 36)
+    ContentContainer.Size = UDim2.new(1, -216, 1, -101)
+    ContentContainer.Position = UDim2.new(0, 196, 0, 56)
     ContentContainer.BackgroundTransparency = 1
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = Main
+    
+    -- Global fade for transitions
+    local GlobalFade = Instance.new("Frame")
+    GlobalFade.Name = "GlobalFade"
+    GlobalFade.Position = UDim2.new(0, 196, 0, 56)
+    GlobalFade.Size = UDim2.new(1, -196, 1, -81)
+    GlobalFade.BackgroundColor3 = Theme.Background
+    GlobalFade.BackgroundTransparency = 1
+    GlobalFade.BorderSizePixel = 0
+    GlobalFade.ZIndex = 2
+    GlobalFade.Parent = Main
+    
+    -- Bottom info bar
+    local InfoBar = Instance.new("Frame")
+    InfoBar.AnchorPoint = Vector2.new(0, 1)
+    InfoBar.Position = UDim2.new(0, 0, 1, 0)
+    InfoBar.Size = UDim2.new(1, 0, 0, 25)
+    InfoBar.BackgroundColor3 = Color3.fromRGB(23, 23, 25)
+    InfoBar.BorderSizePixel = 0
+    InfoBar.Parent = Main
+    
+    local infoCorner = Instance.new("UICorner")
+    infoCorner.CornerRadius = UDim.new(0, 10)
+    infoCorner.Parent = InfoBar
+    
+    local infoFix = Instance.new("Frame")
+    infoFix.Size = UDim2.new(1, 0, 0, 6)
+    infoFix.BackgroundColor3 = Color3.fromRGB(23, 23, 25)
+    infoFix.BorderSizePixel = 0
+    infoFix.Parent = InfoBar
+    
+    local gameInfo = Instance.new("TextLabel")
+    gameInfo.Size = UDim2.new(1, 0, 0, 0)
+    gameInfo.Position = UDim2.new(0, 10, 0.5, -1)
+    gameInfo.AnchorPoint = Vector2.new(0, 0.5)
+    gameInfo.BackgroundTransparency = 1
+    gameInfo.Font = Enum.Font.GothamBold
+    gameInfo.Text = options.GameInfo or "skibi.cc for " .. game:GetService("MarketplaceService"):GetProductInfo(game.PlaceId).Name
+    gameInfo.TextColor3 = Color3.fromRGB(72, 72, 73)
+    gameInfo.TextSize = 14
+    gameInfo.TextXAlignment = Enum.TextXAlignment.Left
+    gameInfo.AutomaticSize = Enum.AutomaticSize.XY
+    gameInfo.Parent = InfoBar
+    
+    local userInfo = Instance.new("TextLabel")
+    userInfo.Size = UDim2.new(1, 0, 0, 0)
+    userInfo.Position = UDim2.new(0, -10, 0.5, -1)
+    userInfo.AnchorPoint = Vector2.new(0, 0.5)
+    userInfo.BackgroundTransparency = 1
+    userInfo.Font = Enum.Font.GothamBold
+    userInfo.Text = '<font color="rgb(72, 72, 73)">User: </font>' .. Players.LocalPlayer.Name
+    userInfo.RichText = true
+    userInfo.TextColor3 = Theme.Accent
+    userInfo.TextSize = 14
+    userInfo.TextXAlignment = Enum.TextXAlignment.Right
+    userInfo.AutomaticSize = Enum.AutomaticSize.XY
+    userInfo.Parent = InfoBar
+    Cohoes:ApplyTheme(userInfo, "TextColor3")
     
     -- Dragging
     local dragging, dragStart, startPos = false, nil, nil
@@ -399,40 +489,80 @@ function Cohoes:CreateWindow(options)
             Cohoes:tween(Main, {Size = UDim2.new(0, size[1], 0, 32)}, Enum.EasingStyle.Quart, 0.3)
             ContentContainer.Visible = false
             TabSidebar.Visible = false
+            InfoBar.Visible = false
         else
             Cohoes:tween(Main, {Size = UDim2.new(0, size[1], 0, size[2])}, Enum.EasingStyle.Quart, 0.3)
             task.wait(0.15)
             ContentContainer.Visible = true
             TabSidebar.Visible = true
+            InfoBar.Visible = true
         end
     end)
     
-    local Tabs = {}
-    local CurrentTab = nil
-    local TabCount = 0
+    Window.Main = Main
+    Window.TabSidebar = TabSidebar
+    Window.ContentContainer = ContentContainer
+    Window.GlobalFade = GlobalFade
+    Window.Tabs = {}
+    Window.CurrentTab = nil
+    Window.TabCount = 0
     
-    function Window:CreateTab(name)
+    function Window:CreateTab(name, icon)
         local Tab = {}
-        TabCount = TabCount + 1
+        Window.TabCount = Window.TabCount + 1
         
         local tabBtn = Instance.new("TextButton")
         tabBtn.Name = name
-        tabBtn.Size = UDim2.new(1, 0, 0, 28)
+        tabBtn.Size = UDim2.new(1, 0, 0, 35)
         tabBtn.BackgroundColor3 = Theme.Tertiary
         tabBtn.BackgroundTransparency = 1
         tabBtn.BorderSizePixel = 0
-        tabBtn.Font = Enum.Font.Gotham
-        tabBtn.Text = string.upper(name)
+        tabBtn.Font = Enum.Font.GothamBold
+        tabBtn.Text = ""
+        tabBtn.AutoButtonColor = false
         tabBtn.TextColor3 = Theme.TextDark
-        tabBtn.TextSize = 10
-        tabBtn.LayoutOrder = TabCount
+        tabBtn.TextSize = 16
+        tabBtn.LayoutOrder = Window.TabCount
         tabBtn.Parent = TabSidebar
         
         local tabBtnCorner = Instance.new("UICorner")
-        tabBtnCorner.CornerRadius = UDim.new(0, 4)
+        tabBtnCorner.CornerRadius = UDim.new(0, 7)
         tabBtnCorner.Parent = tabBtn
         
-        local tabBtnGlow = AddGlow(tabBtn, Theme.Accent, 20, 1)
+        local tabStroke = Instance.new("UIStroke")
+        tabStroke.Color = Color3.fromRGB(23, 23, 29)
+        tabStroke.Enabled = false
+        tabStroke.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+        tabStroke.Parent = tabBtn
+        
+        -- Icon
+        local tabIcon = Instance.new("ImageLabel")
+        tabIcon.AnchorPoint = Vector2.new(0, 0.5)
+        tabIcon.Position = UDim2.new(0, 10, 0.5, 0)
+        tabIcon.Size = UDim2.new(0, 22, 0, 22)
+        tabIcon.BackgroundTransparency = 1
+        tabIcon.Image = icon or "rbxassetid://6034767608"
+        tabIcon.ImageColor3 = Color3.fromRGB(72, 72, 73)
+        tabIcon.Parent = tabBtn
+        Cohoes:ApplyTheme(tabIcon, "ImageColor3")
+        
+        -- Text
+        local tabText = Instance.new("TextLabel")
+        tabText.Position = UDim2.new(0, 40, 0, 0)
+        tabText.Size = UDim2.new(0, 0, 1, 0)
+        tabText.BackgroundTransparency = 1
+        tabText.Font = Enum.Font.GothamBold
+        tabText.Text = name
+        tabText.TextColor3 = Color3.fromRGB(72, 72, 73)
+        tabText.TextSize = 16
+        tabText.TextXAlignment = Enum.TextXAlignment.Left
+        tabText.AutomaticSize = Enum.AutomaticSize.X
+        tabText.Parent = tabBtn
+        
+        local textPadding = Instance.new("UIPadding")
+        textPadding.PaddingLeft = UDim.new(0, 5)
+        textPadding.PaddingRight = UDim.new(0, 5)
+        textPadding.Parent = tabText
         
         local page = Instance.new("ScrollingFrame")
         page.Name = name .. "Page"
@@ -458,78 +588,127 @@ function Cohoes:CreateWindow(options)
         
         pageLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(updateCanvasSize)
         
-        Tabs[name] = {btn = tabBtn, page = page, layout = pageLayout, glow = tabBtnGlow, updateCanvas = updateCanvasSize}
+        Window.Tabs[name] = {
+            btn = tabBtn,
+            icon = tabIcon,
+            text = tabText,
+            page = page,
+            layout = pageLayout,
+            updateCanvas = updateCanvasSize
+        }
+        
+        Tab.page = page
+        Tab.layout = pageLayout
         
         tabBtn.MouseButton1Click:Connect(function()
-            if CurrentTab and Tabs[CurrentTab] then
-                Cohoes:tween(Tabs[CurrentTab].btn, {TextColor3 = Theme.TextDark, BackgroundTransparency = 1}, Enum.EasingStyle.Quart, 0.2)
-                Cohoes:tween(Tabs[CurrentTab].glow, {ImageTransparency = 1}, Enum.EasingStyle.Quart, 0.2)
-                Tabs[CurrentTab].page.Visible = false
+            if Window.CurrentTab and Window.Tabs[Window.CurrentTab] then
+                local oldTab = Window.Tabs[Window.CurrentTab]
+                
+                -- Fade animation
+                GlobalFade.BackgroundTransparency = 0
+                Cohoes:tween(GlobalFade, {BackgroundTransparency = 1}, Enum.EasingStyle.Quad, 0.4)
+                
+                Cohoes:tween(oldTab.btn, {BackgroundTransparency = 1}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(oldTab.icon, {ImageColor3 = Color3.fromRGB(72, 72, 73)}, Enum.EasingStyle.Quart, 0.2)
+                Cohoes:tween(oldTab.text, {TextColor3 = Color3.fromRGB(72, 72, 73)}, Enum.EasingStyle.Quart, 0.2)
+                oldTab.page.Visible = false
             end
-            CurrentTab = name
-            Cohoes:tween(tabBtn, {TextColor3 = Theme.Text, BackgroundTransparency = 0}, Enum.EasingStyle.Quart, 0.2)
-            Cohoes:tween(tabBtnGlow, {ImageTransparency = 0.4}, Enum.EasingStyle.Quart, 0.2)
+            
+            Window.CurrentTab = name
+            Cohoes:tween(tabBtn, {BackgroundTransparency = 0}, Enum.EasingStyle.Quart, 0.2)
+            Cohoes:tween(tabIcon, {ImageColor3 = Theme.Accent}, Enum.EasingStyle.Quart, 0.2)
+            Cohoes:tween(tabText, {TextColor3 = Color3.fromRGB(255, 255, 255)}, Enum.EasingStyle.Quart, 0.2)
             page.Visible = true
             updateCanvasSize()
         end)
         
         tabBtn.MouseEnter:Connect(function()
-            if CurrentTab ~= name then
+            if Window.CurrentTab ~= name then
                 Cohoes:tween(tabBtn, {BackgroundTransparency = 0.5}, Enum.EasingStyle.Quart, 0.15)
             end
         end)
+        
         tabBtn.MouseLeave:Connect(function()
-            if CurrentTab ~= name then
+            if Window.CurrentTab ~= name then
                 Cohoes:tween(tabBtn, {BackgroundTransparency = 1}, Enum.EasingStyle.Quart, 0.15)
             end
         end)
         
-        if TabCount == 1 then
+        if Window.TabCount == 1 then
             task.wait(0.05)
-            tabBtn.TextColor3 = Theme.Text
             tabBtn.BackgroundTransparency = 0
-            tabBtnGlow.ImageTransparency = 0.4
+            tabIcon.ImageColor3 = Theme.Accent
+            tabText.TextColor3 = Color3.fromRGB(255, 255, 255)
             page.Visible = true
-            CurrentTab = name
+            Window.CurrentTab = name
             updateCanvasSize()
         end
         
-        -- Sections and elements would go here (keeping your existing code)
-        -- I'm including a simplified version for testing
+        -- Continue with sections and elements here (keeping your existing implementations)
+        -- I'll add a basic section creator as example
         
-        function Tab:CreateButton(options)
-            local name = options.Name or "Button"
-            local callback = options.Callback or function() end
+        function Tab:CreateSection(sectionName)
+            local SectionOrder = 0
             
-            local btn = Instance.new("TextButton")
-            btn.Size = UDim2.new(1, 0, 0, 28)
-            btn.BackgroundColor3 = Theme.Tertiary
-            btn.BorderSizePixel = 0
-            btn.Font = Enum.Font.Gotham
-            btn.Text = name
-            btn.TextColor3 = Theme.Text
-            btn.TextSize = 10
-            btn.Parent = page
+            local section = Instance.new("Frame")
+            section.Name = sectionName
+            section.Size = UDim2.new(1, 0, 0, 0)
+            section.AutomaticSize = Enum.AutomaticSize.Y
+            section.BackgroundColor3 = Theme.Secondary
+            section.BorderSizePixel = 0
+            section.Parent = page
             
-            local btnCorner = Instance.new("UICorner")
-            btnCorner.CornerRadius = UDim.new(0, 4)
-            btnCorner.Parent = btn
+            local sCorner = Instance.new("UICorner")
+            sCorner.CornerRadius = UDim.new(0, 4)
+            sCorner.Parent = section
             
-            btn.MouseButton1Click:Connect(callback)
+            AddGlow(section, Theme.Accent, 10, 0.9)
             
-            updateCanvasSize()
+            local sPadding = Instance.new("UIPadding")
+            sPadding.PaddingLeft = UDim.new(0, 10)
+            sPadding.PaddingRight = UDim.new(0, 10)
+            sPadding.PaddingTop = UDim.new(0, 8)
+            sPadding.PaddingBottom = UDim.new(0, 8)
+            sPadding.Parent = section
+            
+            local sLayout = Instance.new("UIListLayout")
+            sLayout.SortOrder = Enum.SortOrder.LayoutOrder
+            sLayout.Padding = UDim.new(0, 6)
+            sLayout.Parent = section
+            
+            local sLabel = Instance.new("TextLabel")
+            sLabel.Size = UDim2.new(1, 0, 0, 16)
+            sLabel.BackgroundTransparency = 1
+            sLabel.Font = Enum.Font.GothamBold
+            sLabel.Text = string.upper(sectionName)
+            sLabel.TextColor3 = Theme.TextDark
+            sLabel.TextSize = 10
+            sLabel.TextXAlignment = Enum.TextXAlignment.Left
+            sLabel.LayoutOrder = 0
+            sLabel.Parent = section
+            
+            sLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+                task.wait(0.05)
+                updateCanvasSize()
+            end)
+            
+            return section, sLayout
         end
         
         return Tab
     end
     
-    function Window:Destroy() Main:Destroy() end
-    function Window:Toggle(visible) Main.Visible = visible end
+    function Window:Destroy()
+        Main:Destroy()
+    end
+    
+    function Window:Toggle(visible)
+        Main.Visible = visible
+    end
     
     return Window
 end
 
--- FIX: Add initialization check
-print("Cohoes UI Library loaded successfully!")
+print("Enhanced Cohoes UI Library loaded successfully!")
 
 return Cohoes
