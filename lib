@@ -1,80 +1,34 @@
 --[[
-    COHOES UI LIBRARY
+    COHOES UI LIBRARY v2
     A sleek black & white UI library with Minecraft font
     
+    Features:
+    - Horizontal tab layout
+    - Dropdowns with outlines that overlay everything
+    - Slider value textboxes
+    - Color picker
+    
     Usage:
-    local Cohoes = loadstring(game:HttpGet("YOUR_URL_HERE"))()
+    local Cohoes = loadstring(game:HttpGet("https://raw.githubusercontent.com/29945gorrila/chatogptpp/main/lib"))()
     
     local Window = Cohoes:CreateWindow({
         Title = "My Script",
-        Size = {360, 480}
+        Size = {500, 400}
     })
     
     local Tab = Window:CreateTab("Main")
+    local Section = Tab:CreateSection("Settings")
     
-    Tab:CreateSection("Settings")
-    
-    Tab:CreateToggle({
-        Name = "Enable Feature",
-        Default = false,
-        Callback = function(value)
-            print("Toggled:", value)
-        end
-    })
-    
-    Tab:CreateSlider({
-        Name = "Speed",
-        Min = 0,
-        Max = 100,
-        Default = 50,
-        Callback = function(value)
-            print("Slider:", value)
-        end
-    })
-    
-    Tab:CreateInput({
-        Name = "FOV X",
-        Default = "5",
-        Callback = function(value)
-            print("Input:", value)
-        end
-    })
-    
-    Tab:CreateButton({
-        Name = "Click Me",
-        Callback = function()
-            print("Clicked!")
-        end
-    })
-    
-    Tab:CreateDropdown({
-        Name = "Select Option",
-        Options = {"Option 1", "Option 2", "Option 3"},
-        Default = "Option 1",
-        Callback = function(value)
-            print("Selected:", value)
-        end
-    })
-    
-    Tab:CreateKeybind({
-        Name = "Toggle Key",
-        Default = Enum.KeyCode.F,
-        Callback = function(key)
-            print("Key pressed:", key)
-        end
-    })
-    
-    Cohoes:Notify({
-        Title = "Hello",
-        Message = "Welcome to the script!",
-        Duration = 3
-    })
+    Tab:CreateToggle({...})
+    Tab:CreateSlider({...})
+    Tab:CreateColorPicker({...})
 ]]
 
 local Cohoes = {}
 local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 
 -- Theme
 local Theme = {
@@ -87,7 +41,8 @@ local Theme = {
     TextDark = Color3.fromRGB(120, 120, 120),
     Success = Color3.fromRGB(100, 255, 150),
     Warning = Color3.fromRGB(255, 200, 100),
-    Error = Color3.fromRGB(255, 100, 100)
+    Error = Color3.fromRGB(255, 100, 100),
+    Border = Color3.fromRGB(60, 60, 60)
 }
 
 Cohoes.Theme = Theme
@@ -110,6 +65,14 @@ local function ProtectGui()
 end
 ProtectGui()
 
+-- Dropdown overlay container (renders above everything)
+local OverlayContainer = Instance.new("Frame")
+OverlayContainer.Name = "OverlayContainer"
+OverlayContainer.Size = UDim2.new(1, 0, 1, 0)
+OverlayContainer.BackgroundTransparency = 1
+OverlayContainer.ZIndex = 100
+OverlayContainer.Parent = ScreenGui
+
 -- ============================================
 -- NOTIFICATION SYSTEM
 -- ============================================
@@ -119,6 +82,7 @@ NotifHolder.Name = "Notifications"
 NotifHolder.Size = UDim2.new(0, 300, 1, -40)
 NotifHolder.Position = UDim2.new(1, -310, 0, 20)
 NotifHolder.BackgroundTransparency = 1
+NotifHolder.ZIndex = 200
 NotifHolder.Parent = ScreenGui
 
 local NotifLayout = Instance.new("UIListLayout")
@@ -131,13 +95,13 @@ function Cohoes:Notify(options)
     local title = options.Title or "Notification"
     local message = options.Message or ""
     local duration = options.Duration or 3
-    local notifType = options.Type or "info"
     
     local notif = Instance.new("Frame")
     notif.Size = UDim2.new(1, 0, 0, 55)
     notif.BackgroundColor3 = Theme.Secondary
     notif.BorderSizePixel = 0
     notif.Position = UDim2.new(1, 20, 0, 0)
+    notif.ZIndex = 201
     notif.Parent = NotifHolder
     
     local corner = Instance.new("UICorner")
@@ -145,7 +109,7 @@ function Cohoes:Notify(options)
     corner.Parent = notif
     
     local stroke = Instance.new("UIStroke")
-    stroke.Color = Theme.Tertiary
+    stroke.Color = Theme.Border
     stroke.Thickness = 1
     stroke.Parent = notif
     
@@ -158,6 +122,7 @@ function Cohoes:Notify(options)
     titleLabel.TextColor3 = Theme.Text
     titleLabel.TextSize = 12
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+    titleLabel.ZIndex = 202
     titleLabel.Parent = notif
     
     local msgLabel = Instance.new("TextLabel")
@@ -170,6 +135,7 @@ function Cohoes:Notify(options)
     msgLabel.TextSize = 10
     msgLabel.TextXAlignment = Enum.TextXAlignment.Left
     msgLabel.TextTruncate = Enum.TextTruncate.AtEnd
+    msgLabel.ZIndex = 202
     msgLabel.Parent = notif
     
     local progressBg = Instance.new("Frame")
@@ -177,25 +143,24 @@ function Cohoes:Notify(options)
     progressBg.Position = UDim2.new(0, 0, 1, -2)
     progressBg.BackgroundColor3 = Theme.Tertiary
     progressBg.BorderSizePixel = 0
+    progressBg.ZIndex = 202
     progressBg.Parent = notif
     
     local progress = Instance.new("Frame")
     progress.Size = UDim2.new(1, 0, 1, 0)
     progress.BackgroundColor3 = Theme.Accent
     progress.BorderSizePixel = 0
+    progress.ZIndex = 203
     progress.Parent = progressBg
     
-    -- Slide in
     TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), {
         Position = UDim2.new(0, 0, 0, 0)
     }):Play()
     
-    -- Progress
     TweenService:Create(progress, TweenInfo.new(duration, Enum.EasingStyle.Linear), {
         Size = UDim2.new(0, 0, 1, 0)
     }):Play()
     
-    -- Slide out
     task.delay(duration, function()
         TweenService:Create(notif, TweenInfo.new(0.3, Enum.EasingStyle.Quart, Enum.EasingDirection.In), {
             Position = UDim2.new(1, 20, 0, 0)
@@ -213,10 +178,10 @@ function Cohoes:CreateWindow(options)
     local Window = {}
     
     local title = options.Title or "Cohoes UI"
-    local size = options.Size or {360, 480}
+    local size = options.Size or {500, 400}
     local toggleKey = options.ToggleKey or Enum.KeyCode.RightShift
     
-    -- Main frame
+    -- Main frame (horizontal layout)
     local Main = Instance.new("Frame")
     Main.Name = "MainWindow"
     Main.Size = UDim2.new(0, size[1], 0, size[2])
@@ -230,14 +195,14 @@ function Cohoes:CreateWindow(options)
     mainCorner.Parent = Main
     
     local mainStroke = Instance.new("UIStroke")
-    mainStroke.Color = Theme.Tertiary
+    mainStroke.Color = Theme.Border
     mainStroke.Thickness = 1
     mainStroke.Parent = Main
     
     -- Header
     local Header = Instance.new("Frame")
     Header.Name = "Header"
-    Header.Size = UDim2.new(1, 0, 0, 38)
+    Header.Size = UDim2.new(1, 0, 0, 32)
     Header.BackgroundColor3 = Theme.Secondary
     Header.BorderSizePixel = 0
     Header.Parent = Main
@@ -254,26 +219,26 @@ function Cohoes:CreateWindow(options)
     headerFix.Parent = Header
     
     local titleLabel = Instance.new("TextLabel")
-    titleLabel.Size = UDim2.new(1, -80, 1, 0)
+    titleLabel.Size = UDim2.new(1, -70, 1, 0)
     titleLabel.Position = UDim2.new(0, 12, 0, 0)
     titleLabel.BackgroundTransparency = 1
     titleLabel.Font = Enum.Font.Arcade
     titleLabel.Text = string.upper(title)
     titleLabel.TextColor3 = Theme.Text
-    titleLabel.TextSize = 14
+    titleLabel.TextSize = 12
     titleLabel.TextXAlignment = Enum.TextXAlignment.Left
     titleLabel.Parent = Header
     
     -- Close button
     local closeBtn = Instance.new("TextButton")
-    closeBtn.Size = UDim2.new(0, 24, 0, 24)
-    closeBtn.Position = UDim2.new(1, -32, 0.5, -12)
+    closeBtn.Size = UDim2.new(0, 20, 0, 20)
+    closeBtn.Position = UDim2.new(1, -28, 0.5, -10)
     closeBtn.BackgroundColor3 = Theme.Tertiary
     closeBtn.BorderSizePixel = 0
     closeBtn.Font = Enum.Font.GothamBold
     closeBtn.Text = "×"
     closeBtn.TextColor3 = Theme.TextDark
-    closeBtn.TextSize = 16
+    closeBtn.TextSize = 14
     closeBtn.Parent = Header
     
     local closeBtnCorner = Instance.new("UICorner")
@@ -292,14 +257,14 @@ function Cohoes:CreateWindow(options)
     
     -- Minimize button
     local minBtn = Instance.new("TextButton")
-    minBtn.Size = UDim2.new(0, 24, 0, 24)
-    minBtn.Position = UDim2.new(1, -60, 0.5, -12)
+    minBtn.Size = UDim2.new(0, 20, 0, 20)
+    minBtn.Position = UDim2.new(1, -52, 0.5, -10)
     minBtn.BackgroundColor3 = Theme.Tertiary
     minBtn.BorderSizePixel = 0
     minBtn.Font = Enum.Font.GothamBold
     minBtn.Text = "−"
     minBtn.TextColor3 = Theme.TextDark
-    minBtn.TextSize = 16
+    minBtn.TextSize = 14
     minBtn.Parent = Header
     
     local minBtnCorner = Instance.new("UICorner")
@@ -313,29 +278,35 @@ function Cohoes:CreateWindow(options)
         TweenService:Create(minBtn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Tertiary}):Play()
     end)
     
-    -- Tab bar
-    local TabBar = Instance.new("Frame")
-    TabBar.Name = "TabBar"
-    TabBar.Size = UDim2.new(1, -16, 0, 28)
-    TabBar.Position = UDim2.new(0, 8, 0, 42)
-    TabBar.BackgroundColor3 = Theme.Secondary
-    TabBar.BorderSizePixel = 0
-    TabBar.Parent = Main
+    -- HORIZONTAL LAYOUT: Tab sidebar on left, content on right
+    local TabSidebar = Instance.new("Frame")
+    TabSidebar.Name = "TabSidebar"
+    TabSidebar.Size = UDim2.new(0, 100, 1, -40)
+    TabSidebar.Position = UDim2.new(0, 4, 0, 36)
+    TabSidebar.BackgroundColor3 = Theme.Secondary
+    TabSidebar.BorderSizePixel = 0
+    TabSidebar.Parent = Main
     
-    local tabBarCorner = Instance.new("UICorner")
-    tabBarCorner.CornerRadius = UDim.new(0, 4)
-    tabBarCorner.Parent = TabBar
+    local sidebarCorner = Instance.new("UICorner")
+    sidebarCorner.CornerRadius = UDim.new(0, 4)
+    sidebarCorner.Parent = TabSidebar
     
     local tabLayout = Instance.new("UIListLayout")
-    tabLayout.FillDirection = Enum.FillDirection.Horizontal
     tabLayout.SortOrder = Enum.SortOrder.LayoutOrder
-    tabLayout.Parent = TabBar
+    tabLayout.Padding = UDim.new(0, 2)
+    tabLayout.Parent = TabSidebar
     
-    -- Content container
+    local tabPadding = Instance.new("UIPadding")
+    tabPadding.PaddingTop = UDim.new(0, 4)
+    tabPadding.PaddingLeft = UDim.new(0, 4)
+    tabPadding.PaddingRight = UDim.new(0, 4)
+    tabPadding.Parent = TabSidebar
+    
+    -- Content container (right side)
     local ContentContainer = Instance.new("Frame")
     ContentContainer.Name = "ContentContainer"
-    ContentContainer.Size = UDim2.new(1, -16, 1, -80)
-    ContentContainer.Position = UDim2.new(0, 8, 0, 74)
+    ContentContainer.Size = UDim2.new(1, -116, 1, -40)
+    ContentContainer.Position = UDim2.new(0, 110, 0, 36)
     ContentContainer.BackgroundTransparency = 1
     ContentContainer.ClipsDescendants = true
     ContentContainer.Parent = Main
@@ -371,25 +342,23 @@ function Cohoes:CreateWindow(options)
         end
     end)
     
-    -- Minimize functionality
+    -- Minimize
     local minimized = false
-    local originalSize = Main.Size
-    
     minBtn.MouseButton1Click:Connect(function()
         minimized = not minimized
         if minimized then
             TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
-                Size = UDim2.new(0, size[1], 0, 38)
+                Size = UDim2.new(0, size[1], 0, 32)
             }):Play()
             ContentContainer.Visible = false
-            TabBar.Visible = false
+            TabSidebar.Visible = false
         else
             TweenService:Create(Main, TweenInfo.new(0.3, Enum.EasingStyle.Quart), {
                 Size = UDim2.new(0, size[1], 0, size[2])
             }):Play()
-            task.wait(0.1)
+            task.wait(0.15)
             ContentContainer.Visible = true
-            TabBar.Visible = true
+            TabSidebar.Visible = true
         end
     end)
     
@@ -404,23 +373,20 @@ function Cohoes:CreateWindow(options)
         
         local tabBtn = Instance.new("TextButton")
         tabBtn.Name = name
-        tabBtn.Size = UDim2.new(1 / math.max(TabCount, 1), 0, 1, 0)
+        tabBtn.Size = UDim2.new(1, 0, 0, 28)
+        tabBtn.BackgroundColor3 = Theme.Tertiary
         tabBtn.BackgroundTransparency = 1
         tabBtn.BorderSizePixel = 0
         tabBtn.Font = Enum.Font.Arcade
         tabBtn.Text = string.upper(name)
         tabBtn.TextColor3 = Theme.TextDark
         tabBtn.TextSize = 10
-        tabBtn.Parent = TabBar
+        tabBtn.LayoutOrder = TabCount
+        tabBtn.Parent = TabSidebar
         
-        local indicator = Instance.new("Frame")
-        indicator.Name = "Indicator"
-        indicator.Size = UDim2.new(0.7, 0, 0, 2)
-        indicator.Position = UDim2.new(0.15, 0, 1, -2)
-        indicator.BackgroundColor3 = Theme.Accent
-        indicator.BorderSizePixel = 0
-        indicator.Visible = false
-        indicator.Parent = tabBtn
+        local tabBtnCorner = Instance.new("UICorner")
+        tabBtnCorner.CornerRadius = UDim.new(0, 4)
+        tabBtnCorner.Parent = tabBtn
         
         local page = Instance.new("ScrollingFrame")
         page.Name = name .. "Page"
@@ -438,32 +404,35 @@ function Cohoes:CreateWindow(options)
         pageLayout.Padding = UDim.new(0, 6)
         pageLayout.Parent = page
         
-        -- Update tab sizes
-        for _, child in pairs(TabBar:GetChildren()) do
-            if child:IsA("TextButton") then
-                child.Size = UDim2.new(1 / TabCount, 0, 1, 0)
-            end
-        end
+        Tabs[name] = {btn = tabBtn, page = page, layout = pageLayout}
         
-        Tabs[name] = {btn = tabBtn, indicator = indicator, page = page, layout = pageLayout}
-        
-        -- Tab click
         tabBtn.MouseButton1Click:Connect(function()
             if CurrentTab and Tabs[CurrentTab] then
                 Tabs[CurrentTab].btn.TextColor3 = Theme.TextDark
-                Tabs[CurrentTab].indicator.Visible = false
+                Tabs[CurrentTab].btn.BackgroundTransparency = 1
                 Tabs[CurrentTab].page.Visible = false
             end
             CurrentTab = name
             tabBtn.TextColor3 = Theme.Text
-            indicator.Visible = true
+            tabBtn.BackgroundTransparency = 0
             page.Visible = true
+        end)
+        
+        tabBtn.MouseEnter:Connect(function()
+            if CurrentTab ~= name then
+                TweenService:Create(tabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 0.5}):Play()
+            end
+        end)
+        tabBtn.MouseLeave:Connect(function()
+            if CurrentTab ~= name then
+                TweenService:Create(tabBtn, TweenInfo.new(0.15), {BackgroundTransparency = 1}):Play()
+            end
         end)
         
         -- Auto select first tab
         if TabCount == 1 then
             tabBtn.TextColor3 = Theme.Text
-            indicator.Visible = true
+            tabBtn.BackgroundTransparency = 0
             page.Visible = true
             CurrentTab = name
         end
@@ -510,7 +479,6 @@ function Cohoes:CreateWindow(options)
             sLabel.LayoutOrder = 0
             sLabel.Parent = section
             
-            -- Update canvas size
             sLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
                 task.wait()
                 local totalHeight = 0
@@ -598,31 +566,30 @@ function Cohoes:CreateWindow(options)
                 }):Play()
                 callback(enabled)
             end
-            function Toggle:Get()
-                return enabled
-            end
+            function Toggle:Get() return enabled end
             
             return Toggle
         end
         
-        -- Slider
+        -- Slider with textbox value
         function Tab:CreateSlider(options)
             local name = options.Name or "Slider"
             local min = options.Min or 0
             local max = options.Max or 100
             local default = options.Default or min
+            local decimals = options.Decimals or 2
             local callback = options.Callback or function() end
             local parent = options.Section or page
             local order = options.LayoutOrder or (SectionOrder + 1)
             
             local container = Instance.new("Frame")
-            container.Size = UDim2.new(1, 0, 0, 36)
+            container.Size = UDim2.new(1, 0, 0, 38)
             container.BackgroundTransparency = 1
             container.LayoutOrder = order
             container.Parent = parent
             
             local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(0.65, 0, 0, 16)
+            label.Size = UDim2.new(1, -70, 0, 16)
             label.BackgroundTransparency = 1
             label.Font = Enum.Font.Arcade
             label.Text = name
@@ -631,20 +598,31 @@ function Cohoes:CreateWindow(options)
             label.TextXAlignment = Enum.TextXAlignment.Left
             label.Parent = container
             
-            local valueLabel = Instance.new("TextLabel")
-            valueLabel.Size = UDim2.new(0.35, 0, 0, 16)
-            valueLabel.Position = UDim2.new(0.65, 0, 0, 0)
-            valueLabel.BackgroundTransparency = 1
-            valueLabel.Font = Enum.Font.Arcade
-            valueLabel.Text = tostring(default)
-            valueLabel.TextColor3 = Theme.TextDark
-            valueLabel.TextSize = 10
-            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
-            valueLabel.Parent = container
+            -- Value textbox instead of label
+            local valueBox = Instance.new("TextBox")
+            valueBox.Size = UDim2.new(0, 55, 0, 18)
+            valueBox.Position = UDim2.new(1, -55, 0, 0)
+            valueBox.BackgroundColor3 = Theme.Tertiary
+            valueBox.BorderSizePixel = 0
+            valueBox.Font = Enum.Font.Arcade
+            valueBox.Text = tostring(default)
+            valueBox.TextColor3 = Theme.Text
+            valueBox.TextSize = 10
+            valueBox.ClearTextOnFocus = true
+            valueBox.Parent = container
+            
+            local valueBoxCorner = Instance.new("UICorner")
+            valueBoxCorner.CornerRadius = UDim.new(0, 4)
+            valueBoxCorner.Parent = valueBox
+            
+            local valueBoxStroke = Instance.new("UIStroke")
+            valueBoxStroke.Color = Theme.Border
+            valueBoxStroke.Thickness = 1
+            valueBoxStroke.Parent = valueBox
             
             local track = Instance.new("Frame")
             track.Size = UDim2.new(1, 0, 0, 4)
-            track.Position = UDim2.new(0, 0, 0, 22)
+            track.Position = UDim2.new(0, 0, 0, 26)
             track.BackgroundColor3 = Theme.Tertiary
             track.BorderSizePixel = 0
             track.Parent = container
@@ -677,12 +655,22 @@ function Cohoes:CreateWindow(options)
             local currentValue = default
             local isDragging = false
             
-            local function update(input)
-                local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
-                currentValue = math.floor((min + (max - min) * pos) * 100) / 100
+            local function formatValue(val)
+                return string.format("%." .. decimals .. "f", val)
+            end
+            
+            local function updateVisual(val)
+                local pos = (val - min) / (max - min)
                 fill.Size = UDim2.new(pos, 0, 1, 0)
                 knob.Position = UDim2.new(pos, -6, 0.5, -6)
-                valueLabel.Text = tostring(currentValue)
+                valueBox.Text = formatValue(val)
+            end
+            
+            local function update(input)
+                local pos = math.clamp((input.Position.X - track.AbsolutePosition.X) / track.AbsoluteSize.X, 0, 1)
+                local mult = math.pow(10, decimals)
+                currentValue = math.floor((min + (max - min) * pos) * mult) / mult
+                updateVisual(currentValue)
                 callback(currentValue)
             end
             
@@ -705,18 +693,26 @@ function Cohoes:CreateWindow(options)
                 end
             end)
             
+            -- Handle textbox input
+            valueBox.FocusLost:Connect(function(enterPressed)
+                local val = tonumber(valueBox.Text)
+                if val then
+                    val = math.clamp(val, min, max)
+                    currentValue = val
+                    updateVisual(val)
+                    callback(val)
+                else
+                    valueBox.Text = formatValue(currentValue)
+                end
+            end)
+            
             local Slider = {}
             function Slider:Set(value)
                 currentValue = math.clamp(value, min, max)
-                local pos = (currentValue - min) / (max - min)
-                fill.Size = UDim2.new(pos, 0, 1, 0)
-                knob.Position = UDim2.new(pos, -6, 0.5, -6)
-                valueLabel.Text = tostring(currentValue)
+                updateVisual(currentValue)
                 callback(currentValue)
             end
-            function Slider:Get()
-                return currentValue
-            end
+            function Slider:Get() return currentValue end
             
             return Slider
         end
@@ -738,7 +734,7 @@ function Cohoes:CreateWindow(options)
             container.Parent = parent
             
             local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(1, -60, 1, 0)
+            label.Size = UDim2.new(1, -70, 1, 0)
             label.BackgroundTransparency = 1
             label.Font = Enum.Font.Arcade
             label.Text = name
@@ -748,8 +744,8 @@ function Cohoes:CreateWindow(options)
             label.Parent = container
             
             local box = Instance.new("TextBox")
-            box.Size = UDim2.new(0, 50, 0, 20)
-            box.Position = UDim2.new(1, -50, 0.5, -10)
+            box.Size = UDim2.new(0, 60, 0, 20)
+            box.Position = UDim2.new(1, -60, 0.5, -10)
             box.BackgroundColor3 = Theme.Tertiary
             box.BorderSizePixel = 0
             box.Font = Enum.Font.Arcade
@@ -764,6 +760,11 @@ function Cohoes:CreateWindow(options)
             local boxCorner = Instance.new("UICorner")
             boxCorner.CornerRadius = UDim.new(0, 4)
             boxCorner.Parent = box
+            
+            local boxStroke = Instance.new("UIStroke")
+            boxStroke.Color = Theme.Border
+            boxStroke.Thickness = 1
+            boxStroke.Parent = box
             
             box.FocusLost:Connect(function()
                 if numeric then
@@ -812,6 +813,11 @@ function Cohoes:CreateWindow(options)
             btnCorner.CornerRadius = UDim.new(0, 4)
             btnCorner.Parent = btn
             
+            local btnStroke = Instance.new("UIStroke")
+            btnStroke.Color = Theme.Border
+            btnStroke.Thickness = 1
+            btnStroke.Parent = btn
+            
             btn.MouseEnter:Connect(function()
                 TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Theme.Accent, TextColor3 = Theme.Background}):Play()
             end)
@@ -821,7 +827,7 @@ function Cohoes:CreateWindow(options)
             btn.MouseButton1Click:Connect(callback)
         end
         
-        -- Dropdown
+        -- Dropdown (with outline, overlays everything)
         function Tab:CreateDropdown(options)
             local name = options.Name or "Dropdown"
             local optionsList = options.Options or {}
@@ -834,11 +840,10 @@ function Cohoes:CreateWindow(options)
             container.Size = UDim2.new(1, 0, 0, 26)
             container.BackgroundTransparency = 1
             container.LayoutOrder = order
-            container.ClipsDescendants = false
             container.Parent = parent
             
             local label = Instance.new("TextLabel")
-            label.Size = UDim2.new(0.5, 0, 1, 0)
+            label.Size = UDim2.new(0.45, 0, 1, 0)
             label.BackgroundTransparency = 1
             label.Font = Enum.Font.Arcade
             label.Text = name
@@ -848,8 +853,8 @@ function Cohoes:CreateWindow(options)
             label.Parent = container
             
             local dropBtn = Instance.new("TextButton")
-            dropBtn.Size = UDim2.new(0.5, -4, 0, 22)
-            dropBtn.Position = UDim2.new(0.5, 4, 0.5, -11)
+            dropBtn.Size = UDim2.new(0.55, -4, 0, 22)
+            dropBtn.Position = UDim2.new(0.45, 4, 0.5, -11)
             dropBtn.BackgroundColor3 = Theme.Tertiary
             dropBtn.BorderSizePixel = 0
             dropBtn.Font = Enum.Font.Arcade
@@ -862,66 +867,120 @@ function Cohoes:CreateWindow(options)
             dropBtnCorner.CornerRadius = UDim.new(0, 4)
             dropBtnCorner.Parent = dropBtn
             
+            local dropBtnStroke = Instance.new("UIStroke")
+            dropBtnStroke.Color = Theme.Border
+            dropBtnStroke.Thickness = 1
+            dropBtnStroke.Parent = dropBtn
+            
+            -- Dropdown list (in overlay container for proper z-index)
             local dropList = Instance.new("Frame")
-            dropList.Size = UDim2.new(1, 0, 0, 0)
-            dropList.Position = UDim2.new(0, 0, 1, 2)
-            dropList.BackgroundColor3 = Theme.Tertiary
+            dropList.Size = UDim2.new(0, 0, 0, 0)
+            dropList.BackgroundColor3 = Theme.Secondary
             dropList.BorderSizePixel = 0
-            dropList.ClipsDescendants = true
             dropList.Visible = false
-            dropList.ZIndex = 10
-            dropList.Parent = dropBtn
+            dropList.ZIndex = 101
+            dropList.Parent = OverlayContainer
             
             local dropListCorner = Instance.new("UICorner")
             dropListCorner.CornerRadius = UDim.new(0, 4)
             dropListCorner.Parent = dropList
             
+            local dropListStroke = Instance.new("UIStroke")
+            dropListStroke.Color = Theme.Border
+            dropListStroke.Thickness = 1
+            dropListStroke.Parent = dropList
+            
+            local dropScroll = Instance.new("ScrollingFrame")
+            dropScroll.Size = UDim2.new(1, 0, 1, 0)
+            dropScroll.BackgroundTransparency = 1
+            dropScroll.BorderSizePixel = 0
+            dropScroll.ScrollBarThickness = 2
+            dropScroll.ScrollBarImageColor3 = Theme.TextDark
+            dropScroll.CanvasSize = UDim2.new(0, 0, 0, #optionsList * 24)
+            dropScroll.ZIndex = 102
+            dropScroll.Parent = dropList
+            
             local dropLayout = Instance.new("UIListLayout")
             dropLayout.SortOrder = Enum.SortOrder.LayoutOrder
-            dropLayout.Parent = dropList
+            dropLayout.Parent = dropScroll
             
             local currentValue = default
             local isOpen = false
             
-            for i, option in ipairs(optionsList) do
-                local optBtn = Instance.new("TextButton")
-                optBtn.Size = UDim2.new(1, 0, 0, 22)
-                optBtn.BackgroundTransparency = 1
-                optBtn.BorderSizePixel = 0
-                optBtn.Font = Enum.Font.Arcade
-                optBtn.Text = option
-                optBtn.TextColor3 = Theme.Text
-                optBtn.TextSize = 9
-                optBtn.LayoutOrder = i
-                optBtn.ZIndex = 11
-                optBtn.Parent = dropList
+            local function createOptions()
+                for _, child in pairs(dropScroll:GetChildren()) do
+                    if child:IsA("TextButton") then child:Destroy() end
+                end
                 
-                optBtn.MouseEnter:Connect(function()
-                    optBtn.BackgroundTransparency = 0.8
-                    optBtn.BackgroundColor3 = Theme.Accent
-                end)
-                optBtn.MouseLeave:Connect(function()
+                for i, option in ipairs(optionsList) do
+                    local optBtn = Instance.new("TextButton")
+                    optBtn.Size = UDim2.new(1, 0, 0, 24)
+                    optBtn.BackgroundColor3 = Theme.Tertiary
                     optBtn.BackgroundTransparency = 1
-                end)
-                optBtn.MouseButton1Click:Connect(function()
-                    currentValue = option
-                    dropBtn.Text = option .. " ▼"
-                    isOpen = false
-                    dropList.Visible = false
-                    TweenService:Create(dropList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
-                    callback(option)
-                end)
+                    optBtn.BorderSizePixel = 0
+                    optBtn.Font = Enum.Font.Arcade
+                    optBtn.Text = option
+                    optBtn.TextColor3 = Theme.Text
+                    optBtn.TextSize = 9
+                    optBtn.LayoutOrder = i
+                    optBtn.ZIndex = 103
+                    optBtn.Parent = dropScroll
+                    
+                    optBtn.MouseEnter:Connect(function()
+                        TweenService:Create(optBtn, TweenInfo.new(0.1), {BackgroundTransparency = 0}):Play()
+                    end)
+                    optBtn.MouseLeave:Connect(function()
+                        TweenService:Create(optBtn, TweenInfo.new(0.1), {BackgroundTransparency = 1}):Play()
+                    end)
+                    optBtn.MouseButton1Click:Connect(function()
+                        currentValue = option
+                        dropBtn.Text = option .. " ▼"
+                        isOpen = false
+                        dropList.Visible = false
+                        callback(option)
+                    end)
+                end
+                
+                dropScroll.CanvasSize = UDim2.new(0, 0, 0, #optionsList * 24)
+            end
+            
+            createOptions()
+            
+            local function updateDropPosition()
+                local absPos = dropBtn.AbsolutePosition
+                local absSize = dropBtn.AbsoluteSize
+                dropList.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 2)
+                dropList.Size = UDim2.new(0, absSize.X, 0, math.min(#optionsList * 24, 150))
             end
             
             dropBtn.MouseButton1Click:Connect(function()
                 isOpen = not isOpen
-                dropList.Visible = true
                 if isOpen then
-                    TweenService:Create(dropList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, #optionsList * 22)}):Play()
+                    updateDropPosition()
+                    dropList.Visible = true
                 else
-                    TweenService:Create(dropList, TweenInfo.new(0.2), {Size = UDim2.new(1, 0, 0, 0)}):Play()
-                    task.wait(0.2)
                     dropList.Visible = false
+                end
+            end)
+            
+            -- Close dropdown when clicking elsewhere
+            UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 and isOpen then
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local listPos = dropList.AbsolutePosition
+                    local listSize = dropList.AbsoluteSize
+                    local btnPos = dropBtn.AbsolutePosition
+                    local btnSize = dropBtn.AbsoluteSize
+                    
+                    local inList = mousePos.X >= listPos.X and mousePos.X <= listPos.X + listSize.X and
+                                   mousePos.Y >= listPos.Y and mousePos.Y <= listPos.Y + listSize.Y
+                    local inBtn = mousePos.X >= btnPos.X and mousePos.X <= btnPos.X + btnSize.X and
+                                  mousePos.Y >= btnPos.Y and mousePos.Y <= btnPos.Y + btnSize.Y
+                    
+                    if not inList and not inBtn then
+                        isOpen = false
+                        dropList.Visible = false
+                    end
                 end
             end)
             
@@ -931,40 +990,327 @@ function Cohoes:CreateWindow(options)
                 dropBtn.Text = value .. " ▼"
                 callback(value)
             end
-            function Dropdown:Get()
-                return currentValue
-            end
+            function Dropdown:Get() return currentValue end
             function Dropdown:Refresh(newOptions)
-                for _, child in pairs(dropList:GetChildren()) do
-                    if child:IsA("TextButton") then
-                        child:Destroy()
-                    end
-                end
                 optionsList = newOptions
-                for i, option in ipairs(newOptions) do
-                    local optBtn = Instance.new("TextButton")
-                    optBtn.Size = UDim2.new(1, 0, 0, 22)
-                    optBtn.BackgroundTransparency = 1
-                    optBtn.BorderSizePixel = 0
-                    optBtn.Font = Enum.Font.Arcade
-                    optBtn.Text = option
-                    optBtn.TextColor3 = Theme.Text
-                    optBtn.TextSize = 9
-                    optBtn.LayoutOrder = i
-                    optBtn.ZIndex = 11
-                    optBtn.Parent = dropList
-                    
-                    optBtn.MouseButton1Click:Connect(function()
-                        currentValue = option
-                        dropBtn.Text = option .. " ▼"
-                        isOpen = false
-                        dropList.Visible = false
-                        callback(option)
-                    end)
-                end
+                createOptions()
             end
             
             return Dropdown
+        end
+        
+        -- Color Picker
+        function Tab:CreateColorPicker(options)
+            local name = options.Name or "Color"
+            local default = options.Default or Color3.fromRGB(255, 255, 255)
+            local callback = options.Callback or function() end
+            local parent = options.Section or page
+            local order = options.LayoutOrder or (SectionOrder + 1)
+            
+            local container = Instance.new("Frame")
+            container.Size = UDim2.new(1, 0, 0, 26)
+            container.BackgroundTransparency = 1
+            container.LayoutOrder = order
+            container.Parent = parent
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -40, 1, 0)
+            label.BackgroundTransparency = 1
+            label.Font = Enum.Font.Arcade
+            label.Text = name
+            label.TextColor3 = Theme.Text
+            label.TextSize = 10
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+            
+            local colorBtn = Instance.new("TextButton")
+            colorBtn.Size = UDim2.new(0, 32, 0, 20)
+            colorBtn.Position = UDim2.new(1, -32, 0.5, -10)
+            colorBtn.BackgroundColor3 = default
+            colorBtn.BorderSizePixel = 0
+            colorBtn.Text = ""
+            colorBtn.Parent = container
+            
+            local colorBtnCorner = Instance.new("UICorner")
+            colorBtnCorner.CornerRadius = UDim.new(0, 4)
+            colorBtnCorner.Parent = colorBtn
+            
+            local colorBtnStroke = Instance.new("UIStroke")
+            colorBtnStroke.Color = Theme.Border
+            colorBtnStroke.Thickness = 1
+            colorBtnStroke.Parent = colorBtn
+            
+            -- Color picker popup (in overlay)
+            local pickerFrame = Instance.new("Frame")
+            pickerFrame.Size = UDim2.new(0, 200, 0, 170)
+            pickerFrame.BackgroundColor3 = Theme.Secondary
+            pickerFrame.Visible = false
+            pickerFrame.ZIndex = 101
+            pickerFrame.Parent = OverlayContainer
+            
+            local pickerCorner = Instance.new("UICorner")
+            pickerCorner.CornerRadius = UDim.new(0, 6)
+            pickerCorner.Parent = pickerFrame
+            
+            local pickerStroke = Instance.new("UIStroke")
+            pickerStroke.Color = Theme.Border
+            pickerStroke.Thickness = 1
+            pickerStroke.Parent = pickerFrame
+            
+            -- Saturation/Value picker
+            local svPicker = Instance.new("ImageLabel")
+            svPicker.Size = UDim2.new(1, -20, 0, 100)
+            svPicker.Position = UDim2.new(0, 10, 0, 10)
+            svPicker.BackgroundColor3 = Color3.fromHSV(0, 1, 1)
+            svPicker.BorderSizePixel = 0
+            svPicker.Image = "rbxassetid://4155801252"
+            svPicker.ZIndex = 102
+            svPicker.Parent = pickerFrame
+            
+            local svCorner = Instance.new("UICorner")
+            svCorner.CornerRadius = UDim.new(0, 4)
+            svCorner.Parent = svPicker
+            
+            local svCursor = Instance.new("Frame")
+            svCursor.Size = UDim2.new(0, 10, 0, 10)
+            svCursor.Position = UDim2.new(1, -5, 0, -5)
+            svCursor.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            svCursor.BorderSizePixel = 0
+            svCursor.ZIndex = 103
+            svCursor.Parent = svPicker
+            
+            local svCursorCorner = Instance.new("UICorner")
+            svCursorCorner.CornerRadius = UDim.new(1, 0)
+            svCursorCorner.Parent = svCursor
+            
+            local svCursorStroke = Instance.new("UIStroke")
+            svCursorStroke.Color = Color3.fromRGB(0, 0, 0)
+            svCursorStroke.Thickness = 1
+            svCursorStroke.Parent = svCursor
+            
+            -- Hue slider
+            local huePicker = Instance.new("ImageLabel")
+            huePicker.Size = UDim2.new(1, -20, 0, 16)
+            huePicker.Position = UDim2.new(0, 10, 0, 115)
+            huePicker.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            huePicker.BorderSizePixel = 0
+            huePicker.Image = "rbxassetid://3641079629"
+            huePicker.ZIndex = 102
+            huePicker.Parent = pickerFrame
+            
+            local hueCorner = Instance.new("UICorner")
+            hueCorner.CornerRadius = UDim.new(0, 4)
+            hueCorner.Parent = huePicker
+            
+            local hueCursor = Instance.new("Frame")
+            hueCursor.Size = UDim2.new(0, 4, 1, 4)
+            hueCursor.Position = UDim2.new(0, -2, 0, -2)
+            hueCursor.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            hueCursor.BorderSizePixel = 0
+            hueCursor.ZIndex = 103
+            hueCursor.Parent = huePicker
+            
+            local hueCursorStroke = Instance.new("UIStroke")
+            hueCursorStroke.Color = Color3.fromRGB(0, 0, 0)
+            hueCursorStroke.Thickness = 1
+            hueCursorStroke.Parent = hueCursor
+            
+            -- RGB inputs
+            local rgbContainer = Instance.new("Frame")
+            rgbContainer.Size = UDim2.new(1, -20, 0, 22)
+            rgbContainer.Position = UDim2.new(0, 10, 0, 138)
+            rgbContainer.BackgroundTransparency = 1
+            rgbContainer.ZIndex = 102
+            rgbContainer.Parent = pickerFrame
+            
+            local function createRGBInput(labelText, posX)
+                local lbl = Instance.new("TextLabel")
+                lbl.Size = UDim2.new(0, 12, 1, 0)
+                lbl.Position = UDim2.new(0, posX, 0, 0)
+                lbl.BackgroundTransparency = 1
+                lbl.Font = Enum.Font.Arcade
+                lbl.Text = labelText
+                lbl.TextColor3 = Theme.TextDark
+                lbl.TextSize = 9
+                lbl.ZIndex = 103
+                lbl.Parent = rgbContainer
+                
+                local box = Instance.new("TextBox")
+                box.Size = UDim2.new(0, 35, 1, 0)
+                box.Position = UDim2.new(0, posX + 14, 0, 0)
+                box.BackgroundColor3 = Theme.Tertiary
+                box.BorderSizePixel = 0
+                box.Font = Enum.Font.Arcade
+                box.Text = "255"
+                box.TextColor3 = Theme.Text
+                box.TextSize = 9
+                box.ZIndex = 103
+                box.Parent = rgbContainer
+                
+                local boxCorner = Instance.new("UICorner")
+                boxCorner.CornerRadius = UDim.new(0, 3)
+                boxCorner.Parent = box
+                
+                return box
+            end
+            
+            local rInput = createRGBInput("R", 0)
+            local gInput = createRGBInput("G", 58)
+            local bInput = createRGBInput("B", 116)
+            
+            local currentColor = default
+            local h, s, v = default:ToHSV()
+            local isOpen = false
+            local draggingSV = false
+            local draggingHue = false
+            
+            local function updateColor()
+                currentColor = Color3.fromHSV(h, s, v)
+                colorBtn.BackgroundColor3 = currentColor
+                svPicker.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                
+                local r, g, b = math.floor(currentColor.R * 255), math.floor(currentColor.G * 255), math.floor(currentColor.B * 255)
+                rInput.Text = tostring(r)
+                gInput.Text = tostring(g)
+                bInput.Text = tostring(b)
+                
+                callback(currentColor)
+            end
+            
+            local function updateCursors()
+                svCursor.Position = UDim2.new(s, -5, 1 - v, -5)
+                hueCursor.Position = UDim2.new(h, -2, 0, -2)
+            end
+            
+            local function updatePickerPosition()
+                local absPos = colorBtn.AbsolutePosition
+                local absSize = colorBtn.AbsoluteSize
+                local screenSize = workspace.CurrentCamera.ViewportSize
+                
+                local x = absPos.X
+                local y = absPos.Y + absSize.Y + 4
+                
+                if x + 200 > screenSize.X then
+                    x = absPos.X + absSize.X - 200
+                end
+                if y + 170 > screenSize.Y then
+                    y = absPos.Y - 174
+                end
+                
+                pickerFrame.Position = UDim2.new(0, x, 0, y)
+            end
+            
+            updateCursors()
+            
+            colorBtn.MouseButton1Click:Connect(function()
+                isOpen = not isOpen
+                if isOpen then
+                    updatePickerPosition()
+                    pickerFrame.Visible = true
+                else
+                    pickerFrame.Visible = false
+                end
+            end)
+            
+            svPicker.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSV = true
+                end
+            end)
+            
+            svPicker.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingSV = false
+                end
+            end)
+            
+            huePicker.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingHue = true
+                end
+            end)
+            
+            huePicker.InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    draggingHue = false
+                end
+            end)
+            
+            UserInputService.InputChanged:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseMovement then
+                    if draggingSV then
+                        local pos = Vector2.new(input.Position.X, input.Position.Y)
+                        local relX = math.clamp((pos.X - svPicker.AbsolutePosition.X) / svPicker.AbsoluteSize.X, 0, 1)
+                        local relY = math.clamp((pos.Y - svPicker.AbsolutePosition.Y) / svPicker.AbsoluteSize.Y, 0, 1)
+                        s = relX
+                        v = 1 - relY
+                        updateCursors()
+                        updateColor()
+                    elseif draggingHue then
+                        local pos = input.Position.X
+                        h = math.clamp((pos - huePicker.AbsolutePosition.X) / huePicker.AbsoluteSize.X, 0, 1)
+                        updateCursors()
+                        updateColor()
+                    end
+                end
+            end)
+            
+            -- RGB input handling
+            local function handleRGBInput()
+                local r = math.clamp(tonumber(rInput.Text) or 0, 0, 255)
+                local g = math.clamp(tonumber(gInput.Text) or 0, 0, 255)
+                local b = math.clamp(tonumber(bInput.Text) or 0, 0, 255)
+                
+                currentColor = Color3.fromRGB(r, g, b)
+                h, s, v = currentColor:ToHSV()
+                colorBtn.BackgroundColor3 = currentColor
+                svPicker.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                updateCursors()
+                callback(currentColor)
+            end
+            
+            rInput.FocusLost:Connect(handleRGBInput)
+            gInput.FocusLost:Connect(handleRGBInput)
+            bInput.FocusLost:Connect(handleRGBInput)
+            
+            -- Close when clicking elsewhere
+            UserInputService.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 and isOpen then
+                    task.wait()
+                    local mousePos = UserInputService:GetMouseLocation()
+                    local pickerPos = pickerFrame.AbsolutePosition
+                    local pickerSize = pickerFrame.AbsoluteSize
+                    local btnPos = colorBtn.AbsolutePosition
+                    local btnSize = colorBtn.AbsoluteSize
+                    
+                    local inPicker = mousePos.X >= pickerPos.X and mousePos.X <= pickerPos.X + pickerSize.X and
+                                     mousePos.Y >= pickerPos.Y and mousePos.Y <= pickerPos.Y + pickerSize.Y
+                    local inBtn = mousePos.X >= btnPos.X and mousePos.X <= btnPos.X + btnSize.X and
+                                  mousePos.Y >= btnPos.Y and mousePos.Y <= btnPos.Y + btnSize.Y
+                    
+                    if not inPicker and not inBtn then
+                        isOpen = false
+                        pickerFrame.Visible = false
+                    end
+                end
+            end)
+            
+            local ColorPicker = {}
+            function ColorPicker:Set(color)
+                currentColor = color
+                h, s, v = color:ToHSV()
+                colorBtn.BackgroundColor3 = color
+                svPicker.BackgroundColor3 = Color3.fromHSV(h, 1, 1)
+                updateCursors()
+                local r, g, b = math.floor(color.R * 255), math.floor(color.G * 255), math.floor(color.B * 255)
+                rInput.Text = tostring(r)
+                gInput.Text = tostring(g)
+                bInput.Text = tostring(b)
+                callback(color)
+            end
+            function ColorPicker:Get() return currentColor end
+            
+            return ColorPicker
         end
         
         -- Keybind
@@ -1006,6 +1352,11 @@ function Cohoes:CreateWindow(options)
             keyBtnCorner.CornerRadius = UDim.new(0, 4)
             keyBtnCorner.Parent = keyBtn
             
+            local keyBtnStroke = Instance.new("UIStroke")
+            keyBtnStroke.Color = Theme.Border
+            keyBtnStroke.Thickness = 1
+            keyBtnStroke.Parent = keyBtn
+            
             local currentKey = default
             local listening = false
             
@@ -1029,9 +1380,7 @@ function Cohoes:CreateWindow(options)
                 currentKey = key
                 keyBtn.Text = key.Name
             end
-            function Keybind:Get()
-                return currentKey
-            end
+            function Keybind:Get() return currentKey end
             
             return Keybind
         end
@@ -1043,7 +1392,7 @@ function Cohoes:CreateWindow(options)
             local order = options.LayoutOrder or (SectionOrder + 1)
             
             local lbl = Instance.new("TextLabel")
-            lbl.Size = UDim2.new(1, 0, 0, 20)
+            lbl.Size = UDim2.new(1, 0, 0, 18)
             lbl.BackgroundTransparency = 1
             lbl.Font = Enum.Font.Arcade
             lbl.Text = text
@@ -1054,26 +1403,17 @@ function Cohoes:CreateWindow(options)
             lbl.Parent = parent
             
             local Label = {}
-            function Label:Set(newText)
-                lbl.Text = newText
-            end
-            
+            function Label:Set(newText) lbl.Text = newText end
             return Label
         end
         
         return Tab
     end
     
-    function Window:Destroy()
-        Main:Destroy()
-    end
-    
-    function Window:Toggle(visible)
-        Main.Visible = visible
-    end
+    function Window:Destroy() Main:Destroy() end
+    function Window:Toggle(visible) Main.Visible = visible end
     
     return Window
 end
 
--- Return library
 return Cohoes
